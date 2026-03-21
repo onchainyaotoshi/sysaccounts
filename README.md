@@ -1,6 +1,6 @@
 # SysAccounts
 
-Web-based Linux server user management tool. Manage users, groups, sudoers, and sessions through a browser interface. Authenticated via Yaotoshi Accounts (OAuth 2.0 PKCE).
+Web-based Linux server user management tool. Manage users, groups, sudoers, and sessions through a browser interface. Authenticated via [accounts](https://github.com/onchainyaotoshi/accounts) (OAuth 2.0 PKCE).
 
 ## Features
 
@@ -9,7 +9,7 @@ Web-based Linux server user management tool. Manage users, groups, sudoers, and 
 - **Sudoers** — View and manage sudo rules (`/etc/sudoers.d/`)
 - **Sessions** — View active sessions (`who`), recent logins (`last`), kill sessions
 - **Real-time** — WebSocket file watchers push updates on `/etc/passwd`, `/etc/group` changes
-- **Auth** — OAuth 2.0 PKCE login via Yaotoshi Accounts
+- **Auth** — OAuth 2.0 PKCE login via [accounts](https://github.com/onchainyaotoshi/accounts)
 
 ## Tech Stack
 
@@ -17,7 +17,7 @@ Web-based Linux server user management tool. Manage users, groups, sudoers, and 
 |----------|-----------------------------------------|
 | Frontend | React 18, Vite, React Router            |
 | Backend  | Node.js, Express, Socket.IO             |
-| Auth     | @yaotoshi/auth-sdk (OAuth 2.0 PKCE)     |
+| Auth     | [@yaotoshi/auth-sdk](https://github.com/onchainyaotoshi/accounts) (OAuth 2.0 PKCE) |
 | Runtime  | Docker (privileged, host PID)            |
 | Testing  | Jest, Supertest                          |
 
@@ -60,7 +60,7 @@ docker compose up -d --build
 |----------|----------|-------------|
 | `PORT` | No | Server port (default: 9998) |
 | `HOST` | No | Bind address (default: 127.0.0.1) |
-| `ACCOUNTS_URL` | For auth | Yaotoshi Accounts URL |
+| `ACCOUNTS_URL` | For auth | Accounts service URL |
 | `OAUTH_CLIENT_ID` | For auth | OAuth client ID |
 | `OAUTH_REDIRECT_URI` | For auth | OAuth callback URL |
 | `OAUTH_POST_LOGOUT_REDIRECT_URI` | For auth | Post-logout redirect URL |
