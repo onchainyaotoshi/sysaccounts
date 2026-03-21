@@ -71,10 +71,6 @@
 | `server/__tests__/groupService.test.js` | Group service tests |
 | `server/__tests__/sudoService.test.js` | Sudo service tests |
 | `server/__tests__/sessionService.test.js` | Session service tests |
-| `server/__tests__/routes/users.test.js` | User routes integration tests |
-| `server/__tests__/routes/groups.test.js` | Group routes integration tests |
-| `server/__tests__/routes/sudoers.test.js` | Sudoers routes integration tests |
-| `server/__tests__/routes/sessions.test.js` | Session routes integration tests |
 
 ---
 
@@ -88,8 +84,23 @@
 - Create: `client/src/main.jsx`
 - Create: `client/src/App.jsx`
 - Create: `server/index.js`
+- Create: `.gitignore`
 
-- [ ] **Step 1: Initialize root package.json**
+- [ ] **Step 1: Initialize git repo and .gitignore**
+
+```bash
+git init
+```
+
+`.gitignore`:
+```
+node_modules/
+client/dist/
+*.log
+.env
+```
+
+- [ ] **Step 2: Initialize root package.json**
 
 ```json
 {
@@ -245,11 +256,6 @@ const io = new Server(server, {
 app.use(cors({ origin: false }));
 app.use(express.json());
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', hostname: (await import('os')).hostname() });
-});
-
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(join(__dirname, '..', 'client', 'dist')));
@@ -285,7 +291,7 @@ Expected: server starts on 127.0.0.1:9998
 - [ ] **Step 8: Commit**
 
 ```bash
-git add package.json package-lock.json client/ server/index.js
+git add .gitignore package.json package-lock.json client/ server/index.js
 git commit -m "feat: project scaffolding with Express, socket.io, React, Vite"
 ```
 
@@ -664,7 +670,17 @@ export async function getUserDetail(username) {
     // User has no sudo access
   }
 
-  return { ...user, groups, sudo };
+  let lastLogin = null;
+  try {
+    const lastOutput = await execute('last', ['-1', '-F', username]);
+    const firstLine = lastOutput.split('\n')[0];
+    if (firstLine && !firstLine.includes('wtmp')) {
+      const dateMatch = firstLine.match(/\w{3}\s+\w{3}\s+\d+\s+[\d:]+\s+\d{4}/);
+      if (dateMatch) lastLogin = new Date(dateMatch[0]).toISOString();
+    }
+  } catch { /* no login history */ }
+
+  return { ...user, groups, sudo, lastLogin };
 }
 
 export async function createUser({ username, password, shell, home, gecos, groups, createHome }) {
@@ -679,21 +695,7 @@ export async function createUser({ username, password, shell, home, gecos, group
   await execute('useradd', args);
 
   if (password) {
-    await execute('chpasswd', [], password);
-    // chpasswd reads from stdin — we need a different approach
-    const { execFile } = await import('child_process');
-    const { isDocker: checkDocker, buildCommand } = await import('./executor.js');
-    const inDocker = await checkDocker();
-    const { cmd, args: cmdArgs } = buildCommand('chpasswd', [], inDocker);
-
-    await new Promise((resolve, reject) => {
-      const proc = execFile(cmd, cmdArgs, (error) => {
-        if (error) reject(new Error(error.message));
-        else resolve();
-      });
-      proc.stdin.write(`${username}:${password}\n`);
-      proc.stdin.end();
-    });
+    await changePassword(username, password);
   }
 }
 
@@ -1477,7 +1479,7 @@ export default router;
 
 - [ ] **Step 5: Update server/index.js to register routes and add rate limiting**
 
-Add to `server/index.js` after `app.use(express.json())`:
+Add imports at top of `server/index.js` and register routes after `app.use(express.json())`:
 ```js
 import rateLimit from 'express-rate-limit';
 import os from 'os';
@@ -1488,17 +1490,19 @@ import sessionRoutes from './routes/sessions.js';
 
 const passwordLimiter = rateLimit({ windowMs: 60000, max: 10 });
 
+// Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', hostname: os.hostname() });
 });
 
+// Rate limit BEFORE routes
+app.use('/api/users/:username/password', passwordLimiter);
+
+// Routes
 app.use('/api/users', userRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/sudoers', sudoerRoutes);
 app.use('/api/sessions', sessionRoutes);
-
-// Apply rate limit to password endpoints
-app.use('/api/users/:username/password', passwordLimiter);
 ```
 
 - [ ] **Step 6: Commit**
@@ -1571,14 +1575,59 @@ export function startWatcher(io) {
 }
 ```
 
-- [ ] **Step 2: Integrate watcher into server/index.js**
+- [ ] **Step 2: Write final consolidated server/index.js**
 
-Add after socket.io setup:
+Replace `server/index.js` entirely with the final version incorporating all previous tasks:
+
 ```js
+import express from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import cors from 'cors';
+import os from 'os';
+import rateLimit from 'express-rate-limit';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { startWatcher } from './watcher.js';
+import userRoutes from './routes/users.js';
+import groupRoutes from './routes/groups.js';
+import sudoerRoutes from './routes/sudoers.js';
+import sessionRoutes from './routes/sessions.js';
 
-let watchers;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
+const app = express();
+const server = createServer(app);
+const io = new Server(server, { cors: { origin: false } });
+
+app.use(cors({ origin: false }));
+app.use(express.json());
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', hostname: os.hostname() });
+});
+
+// Rate limit BEFORE routes
+const passwordLimiter = rateLimit({ windowMs: 60000, max: 10 });
+app.use('/api/users/:username/password', passwordLimiter);
+
+// Routes
+app.use('/api/users', userRoutes);
+app.use('/api/groups', groupRoutes);
+app.use('/api/sudoers', sudoerRoutes);
+app.use('/api/sessions', sessionRoutes);
+
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(join(__dirname, '..', 'client', 'dist')));
+  app.get('*', (req, res) => {
+    res.sendFile(join(__dirname, '..', 'client', 'dist', 'index.html'));
+  });
+}
+
+// WebSocket
 io.on('connection', (socket) => {
   console.log(`Client connected: ${socket.id}`);
   socket.on('disconnect', () => {
@@ -1586,20 +1635,29 @@ io.on('connection', (socket) => {
   });
 });
 
-watchers = startWatcher(io);
-```
+// File watcher
+const watchers = startWatcher(io);
 
-Update shutdown handler:
-```js
+// Start server
+const PORT = process.env.PORT || 9998;
+const HOST = process.env.HOST || '127.0.0.1';
+
+server.listen(PORT, HOST, () => {
+  console.log(`Server running on http://${HOST}:${PORT}`);
+});
+
+// Graceful shutdown
 const shutdown = () => {
   console.log('Shutting down...');
-  if (watchers) {
-    watchers.userWatcher.close();
-    watchers.groupWatcher.close();
-  }
+  watchers.userWatcher.close();
+  watchers.groupWatcher.close();
   io.close();
   server.close(() => process.exit(0));
 };
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
+
+export { app, io, server };
 ```
 
 - [ ] **Step 3: Commit**
@@ -1857,7 +1915,7 @@ export const api = {
 
   // Sessions
   getSessions: () => request('/sessions'),
-  getLogins: (limit = 50) => request(`/sessions/logins?limit=${limit}`),
+  getLogins: (limit = 50) => request(`/sessions/logins?limit=${limit}`),  // Maps to GET /api/sessions/logins
 
   // Health
   getHealth: () => request('/health'),
@@ -2068,6 +2126,8 @@ export default function ConfirmDialog({ title, message, onConfirm, onCancel }) {
 
 - [ ] **Step 8: Update App.jsx with providers and socket**
 
+Note: Page components (UserTable, etc.) are created in Tasks 10-12. Use placeholder components for now. The final App.jsx with real imports is written in Task 12 Step 3.
+
 `client/src/App.jsx`:
 ```jsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -2076,10 +2136,11 @@ import { useSocket } from './hooks/useSocket.js';
 import { api } from './api/client.js';
 import { ToastProvider } from './components/Toast.jsx';
 import Layout from './components/Layout.jsx';
-import UserTable from './components/UserTable.jsx';
-import GroupTable from './components/GroupTable.jsx';
-import SudoersList from './components/SudoersList.jsx';
-import SessionList from './components/SessionList.jsx';
+
+// Placeholder pages — replaced in Tasks 10-12
+function Placeholder({ name }) {
+  return <div style={{ color: 'var(--text-secondary)', padding: 40 }}>{name} page — coming soon</div>;
+}
 
 export default function App() {
   const { connected, on } = useSocket();
@@ -2095,10 +2156,10 @@ export default function App() {
         <Layout connected={connected} hostname={hostname}>
           <Routes>
             <Route path="/" element={<Navigate to="/users" replace />} />
-            <Route path="/users" element={<UserTable socketOn={on} />} />
-            <Route path="/groups" element={<GroupTable socketOn={on} />} />
-            <Route path="/sudo" element={<SudoersList />} />
-            <Route path="/sessions" element={<SessionList />} />
+            <Route path="/users" element={<Placeholder name="Users" />} />
+            <Route path="/groups" element={<Placeholder name="Groups" />} />
+            <Route path="/sudo" element={<Placeholder name="Sudo" />} />
+            <Route path="/sessions" element={<Placeholder name="Sessions" />} />
           </Routes>
         </Layout>
       </ToastProvider>
@@ -2840,11 +2901,52 @@ export default function SessionList() {
 }
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 3: Update App.jsx with real page imports**
+
+Replace `client/src/App.jsx` with the final version using actual components:
+```jsx
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useSocket } from './hooks/useSocket.js';
+import { api } from './api/client.js';
+import { ToastProvider } from './components/Toast.jsx';
+import Layout from './components/Layout.jsx';
+import UserTable from './components/UserTable.jsx';
+import GroupTable from './components/GroupTable.jsx';
+import SudoersList from './components/SudoersList.jsx';
+import SessionList from './components/SessionList.jsx';
+
+export default function App() {
+  const { connected, on } = useSocket();
+  const [hostname, setHostname] = useState('');
+
+  useEffect(() => {
+    api.getHealth().then(d => setHostname(d.hostname)).catch(() => {});
+  }, []);
+
+  return (
+    <BrowserRouter>
+      <ToastProvider>
+        <Layout connected={connected} hostname={hostname}>
+          <Routes>
+            <Route path="/" element={<Navigate to="/users" replace />} />
+            <Route path="/users" element={<UserTable socketOn={on} />} />
+            <Route path="/groups" element={<GroupTable socketOn={on} />} />
+            <Route path="/sudo" element={<SudoersList />} />
+            <Route path="/sessions" element={<SessionList />} />
+          </Routes>
+        </Layout>
+      </ToastProvider>
+    </BrowserRouter>
+  );
+}
+```
+
+- [ ] **Step 4: Commit**
 
 ```bash
-git add client/src/components/SudoersList.jsx client/src/components/SessionList.jsx
-git commit -m "feat: add Sudo rules and Sessions pages"
+git add client/src/components/SudoersList.jsx client/src/components/SessionList.jsx client/src/App.jsx
+git commit -m "feat: add Sudo rules and Sessions pages, finalize App.jsx"
 ```
 
 ---
