@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { getAuth } from '../auth.js';
 import StatusBar from './StatusBar.jsx';
 
 const navItems = [
@@ -9,6 +10,11 @@ const navItems = [
 ];
 
 export default function Layout({ children, connected, hostname }) {
+  const handleLogout = () => {
+    const auth = getAuth();
+    auth.logout();
+  };
+
   return (
     <>
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
@@ -16,7 +22,10 @@ export default function Layout({ children, connected, hostname }) {
           <span style={{ color: 'var(--accent-green)', fontSize: 18 }}>|</span>
           <span style={{ fontWeight: 'bold' }}>Server User Management</span>
         </div>
-        <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>server: {hostname || '...'}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>server: {hostname || '...'}</span>
+          <button onClick={handleLogout} style={{ padding: '4px 12px', fontSize: 12, background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-secondary)', borderRadius: 4, cursor: 'pointer' }}>Logout</button>
+        </div>
       </header>
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <nav style={{ width: 180, borderRight: '1px solid var(--border)', background: 'var(--bg-secondary)', padding: '12px 0' }}>
