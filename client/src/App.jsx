@@ -4,10 +4,10 @@ import { useSocket } from './hooks/useSocket.js';
 import { api } from './api/client.js';
 import { ToastProvider } from './components/Toast.jsx';
 import Layout from './components/Layout.jsx';
-
-function Placeholder({ name }) {
-  return <div style={{ color: 'var(--text-secondary)', padding: 40 }}>{name} page - coming soon</div>;
-}
+import UserTable from './components/UserTable.jsx';
+import GroupTable from './components/GroupTable.jsx';
+import SudoersList from './components/SudoersList.jsx';
+import SessionList from './components/SessionList.jsx';
 
 export default function App() {
   const { connected, on } = useSocket();
@@ -20,10 +20,10 @@ export default function App() {
         <Layout connected={connected} hostname={hostname}>
           <Routes>
             <Route path="/" element={<Navigate to="/users" replace />} />
-            <Route path="/users" element={<Placeholder name="Users" />} />
-            <Route path="/groups" element={<Placeholder name="Groups" />} />
-            <Route path="/sudo" element={<Placeholder name="Sudo" />} />
-            <Route path="/sessions" element={<Placeholder name="Sessions" />} />
+            <Route path="/users" element={<UserTable socketOn={on} />} />
+            <Route path="/groups" element={<GroupTable socketOn={on} />} />
+            <Route path="/sudo" element={<SudoersList />} />
+            <Route path="/sessions" element={<SessionList />} />
           </Routes>
         </Layout>
       </ToastProvider>
