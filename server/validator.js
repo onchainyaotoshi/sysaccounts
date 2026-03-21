@@ -13,6 +13,12 @@ export function validateShell(shell) {
   return typeof shell === 'string' && SHELL_RE.test(shell);
 }
 
+const TERMINAL_RE = /^(pts\/\d+|tty\d+)$/;
+
+export function validateTerminal(terminal) {
+  return typeof terminal === 'string' && TERMINAL_RE.test(terminal);
+}
+
 export function validateRequired(obj, fields) {
   const missing = fields.filter(f => obj[f] === undefined || obj[f] === null || obj[f] === '');
   return missing.length === 0 ? null : `Missing required fields: ${missing.join(', ')}`;

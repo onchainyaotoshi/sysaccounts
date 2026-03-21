@@ -31,6 +31,9 @@ app.get('/api/health', (req, res) => {
 const passwordLimiter = rateLimit({ windowMs: 60000, max: 10 });
 app.use('/api/users/:username/password', passwordLimiter);
 
+const sessionKillLimiter = rateLimit({ windowMs: 60000, max: 10 });
+app.use('/api/sessions/:terminal', sessionKillLimiter);
+
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/groups', groupRoutes);

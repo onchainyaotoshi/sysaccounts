@@ -45,9 +45,14 @@ export default function GroupTable({ socketOn }) {
         <tbody>
           {groups.map(g => (
             <tr key={g.name} style={{ cursor: 'pointer' }} onClick={() => setSelected(g.name)}>
-              <td style={{ color: 'var(--accent-green)' }}>{g.name}</td>
+              <td style={{ color: 'var(--accent-green)' }}>
+                {g.name}
+              </td>
               <td>{g.gid}</td>
-              <td style={{ color: 'var(--text-secondary)' }}>{g.members.length} members</td>
+              <td style={{ color: 'var(--text-secondary)' }}>
+                {g.members.length} members
+                <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--accent-amber, #f39c12)', opacity: 0.8 }}>click to manage</span>
+              </td>
               <td><button className="danger" style={{ padding: '2px 10px', fontSize: 12 }} onClick={e => { e.stopPropagation(); setDeleteTarget(g.name); }}>delete</button></td>
             </tr>
           ))}

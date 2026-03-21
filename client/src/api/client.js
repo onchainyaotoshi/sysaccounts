@@ -32,5 +32,6 @@ export const api = {
   revokeSudo: (username) => request(`/sudoers/${username}`, { method: 'DELETE' }),
   getSessions: () => request('/sessions'),
   getLogins: (limit = 50) => request(`/sessions/logins?limit=${limit}`),
+  killSession: (terminal) => request(`/sessions/${terminal}`, { method: 'DELETE' }),
   getHealth: () => request('/health'),
 };

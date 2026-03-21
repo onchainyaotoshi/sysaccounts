@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { validateUsername, validateGroupname, validateShell } from '../validator.js';
+import { validateUsername, validateGroupname, validateShell, validateTerminal } from '../validator.js';
 
 describe('validateUsername', () => {
   it('accepts valid usernames', () => {
@@ -37,5 +37,22 @@ describe('validateShell', () => {
     expect(validateShell('bash')).toBe(false);
     expect(validateShell('/bin/bash; rm -rf')).toBe(false);
     expect(validateShell('')).toBe(false);
+  });
+});
+
+describe('validateTerminal', () => {
+  it('accepts valid terminal names', () => {
+    expect(validateTerminal('pts/0')).toBe(true);
+    expect(validateTerminal('pts/12')).toBe(true);
+    expect(validateTerminal('tty1')).toBe(true);
+    expect(validateTerminal('tty99')).toBe(true);
+  });
+  it('rejects invalid terminal names', () => {
+    expect(validateTerminal('')).toBe(false);
+    expect(validateTerminal('pts/0; rm -rf /')).toBe(false);
+    expect(validateTerminal('../etc/passwd')).toBe(false);
+    expect(validateTerminal('tty')).toBe(false);
+    expect(validateTerminal(123)).toBe(false);
+    expect(validateTerminal(null)).toBe(false);
   });
 });
