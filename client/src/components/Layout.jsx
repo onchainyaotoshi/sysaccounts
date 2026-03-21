@@ -20,7 +20,7 @@ export default function Layout({ children, connected, hostname }) {
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ color: 'var(--accent-green)', fontSize: 18 }}>|</span>
-          <span style={{ fontWeight: 'bold' }}>Server User Management</span>
+          <span style={{ fontWeight: 'bold' }}>SysAccounts</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>server: {hostname || '...'}</span>

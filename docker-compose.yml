@@ -1,7 +1,7 @@
 services:
-  server-user-management:
+  sysaccounts:
     build: .
-    container_name: server-user-management
+    container_name: sysaccounts
     pid: "host"
     privileged: true
     ports:
