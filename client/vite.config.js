@@ -6,6 +6,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': 'http://localhost:9998',
+      '/auth': 'http://localhost:9998',
       '/socket.io': {
         target: 'http://localhost:9998',
         ws: true,
