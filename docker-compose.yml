@@ -17,6 +17,8 @@ services:
       - /home:/home
       - /var/run/utmp:/var/run/utmp:ro
       - /var/log/wtmp:/var/log/wtmp:ro
+    env_file:
+      - .env
     environment:
       - PORT=9998
       - HOST=0.0.0.0
