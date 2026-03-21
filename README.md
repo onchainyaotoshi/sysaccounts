@@ -1,100 +1,106 @@
 # SysAccounts
 
-Web-based Linux server user management tool. Manage users, groups, sudoers, and sessions through a browser interface. Authenticated via [accounts](https://github.com/onchainyaotoshi/accounts) (OAuth 2.0 PKCE).
+Web-based Linux server user management tool. Manage users, groups, sudoers, and sessions through a browser interface.
 
 ## Features
 
-- **Users** — Create, view, delete users. Change passwords, lock/unlock, manage aging.
-- **Groups** — Create, view, delete groups. Multi-select member management.
-- **Sudoers** — View and manage sudo rules (`/etc/sudoers.d/`)
-- **Sessions** — View active sessions (`who`), recent logins (`last`), kill sessions
-- **Real-time** — WebSocket file watchers push updates on `/etc/passwd`, `/etc/group` changes
-- **Auth** — OAuth 2.0 PKCE login via [accounts](https://github.com/onchainyaotoshi/accounts)
+- **Users** — Create, delete, lock/unlock, change passwords, manage aging
+- **Groups** — Create, delete, add/remove members
+- **Sudoers** — Grant and revoke sudo rules
+- **Sessions** — View active sessions, recent logins, kill sessions
+- **Real-time** — Live updates when `/etc/passwd` or `/etc/group` changes
+- **Auth** — OAuth 2.0 PKCE via [accounts](https://github.com/onchainyaotoshi/accounts)
 
-## Tech Stack
+## Requirements
 
-| Layer    | Tech                                    |
-|----------|-----------------------------------------|
-| Frontend | React 18, Vite, React Router            |
-| Backend  | Node.js, Express, Socket.IO             |
-| Auth     | [@yaotoshi/auth-sdk](https://github.com/onchainyaotoshi/accounts) (OAuth 2.0 PKCE) |
-| Runtime  | Docker (privileged, host PID)            |
-| Testing  | Jest, Supertest                          |
+- Linux server (manages real system users)
+- Docker and Docker Compose
+- *(Optional)* [accounts](https://github.com/onchainyaotoshi/accounts) service for authentication
 
-## Quick Start
+## Setup
 
-### Development
+### 1. Clone
 
 ```bash
-npm install
-
-# Copy env example and configure (optional — auth skipped if not set)
-cp .env.example .env
-
-# Start backend (port 9998)
-npm run dev
-
-# Start frontend dev server (separate terminal)
-npm run dev:client
-
-# Run tests
-npm test
+git clone https://github.com/onchainyaotoshi/sysaccounts.git
+cd sysaccounts
 ```
 
-### Production (Docker)
+### 2. Configure
 
 ```bash
-# Configure OAuth
 cp .env.example .env
-# Edit .env with real values
+```
 
-# Build and run
-docker compose up -d --build
+Edit `.env`:
 
-# Access at http://localhost:9998
+```bash
+# Port (default 9995)
+PORT=9995
+
+# Authentication (optional — skip these to run without auth)
+ACCOUNTS_URL=https://your-accounts-server.com
+OAUTH_CLIENT_ID=your-client-id
+OAUTH_REDIRECT_URI=https://your-domain.com/auth/callback
+OAUTH_POST_LOGOUT_REDIRECT_URI=https://your-domain.com
+```
+
+> If you skip the auth variables, the app runs without login — useful for testing, but **not recommended for production**.
+
+### 3. Deploy
+
+```bash
+sudo docker compose up -d --build
+```
+
+The app is now running at `http://127.0.0.1:9995`.
+
+### 4. Access
+
+The port binds to `127.0.0.1` only (not exposed to the network). To access remotely, put it behind a reverse proxy like Nginx:
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name sysaccounts.your-domain.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:9995;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+```
+
+The `Upgrade`/`Connection` headers are needed for WebSocket (real-time updates).
+
+## Updating
+
+```bash
+git pull
+sudo docker compose up -d --build
 ```
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `PORT` | No | Server port (default: 9998) |
-| `HOST` | No | Bind address (default: 127.0.0.1) |
-| `ACCOUNTS_URL` | For auth | Accounts service URL |
-| `OAUTH_CLIENT_ID` | For auth | OAuth client ID |
-| `OAUTH_REDIRECT_URI` | For auth | OAuth callback URL |
-| `OAUTH_POST_LOGOUT_REDIRECT_URI` | For auth | Post-logout redirect URL |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `9995` | Server port |
+| `ACCOUNTS_URL` | — | Auth server URL |
+| `OAUTH_CLIENT_ID` | — | OAuth client ID |
+| `OAUTH_REDIRECT_URI` | — | Callback URL after login |
+| `OAUTH_POST_LOGOUT_REDIRECT_URI` | — | Redirect URL after logout |
 
-## API Endpoints
+## Security Notes
 
-All `/api/*` endpoints require `Authorization: Bearer <token>` when auth is enabled.
+- Container runs in **privileged mode** — it needs this to manage system users
+- Port is bound to **127.0.0.1** — not directly accessible from the network
+- Without auth configured, **anyone who can reach the port has full access** to user management
+- Always use auth + reverse proxy with HTTPS in production
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health` | Health check (public) |
-| GET | `/api/users` | List users |
-| POST | `/api/users` | Create user |
-| DELETE | `/api/users/:username` | Delete user |
-| POST | `/api/users/:username/password` | Change password |
-| POST | `/api/users/:username/lock` | Lock/unlock user |
-| GET | `/api/groups` | List groups |
-| POST | `/api/groups` | Create group |
-| DELETE | `/api/groups/:name` | Delete group |
-| POST | `/api/groups/:name/members` | Add members |
-| DELETE | `/api/groups/:name/members/:user` | Remove member |
-| GET | `/api/sudoers` | List sudo rules |
-| POST | `/api/sudoers` | Grant sudo |
-| DELETE | `/api/sudoers/:username` | Revoke sudo |
-| GET | `/api/sessions` | Active sessions |
-| GET | `/api/sessions/logins` | Recent logins |
-| DELETE | `/api/sessions/:terminal` | Kill session |
-| GET | `/auth/config` | OAuth config (public) |
-| POST | `/auth/proxy/token` | OAuth token exchange (proxy) |
-| GET | `/auth/proxy/me` | User info (proxy) |
-| POST | `/auth/proxy/logout` | Logout (proxy) |
+## License
 
-## Docker Notes
-
-The container runs in privileged mode with host PID namespace to manage system users. It mounts `/etc/passwd`, `/etc/shadow`, `/etc/group`, `/etc/sudoers`, `/home`, and login records.
-
-Port is bound to `127.0.0.1:9998` by default — use a reverse proxy for external access.
+MIT
