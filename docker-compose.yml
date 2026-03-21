@@ -5,7 +5,7 @@ services:
     pid: "host"
     privileged: true
     ports:
-      - "127.0.0.1:9998:9998"
+      - "127.0.0.1:${PORT:-9995}:${PORT:-9995}"
     volumes:
       - /etc/passwd:/etc/passwd
       - /etc/shadow:/etc/shadow
@@ -20,6 +20,6 @@ services:
     env_file:
       - .env
     environment:
-      - PORT=9998
+      - PORT=${PORT:-9995}
       - HOST=0.0.0.0
     restart: unless-stopped
