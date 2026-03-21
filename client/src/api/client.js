@@ -1,11 +1,44 @@
+import { getAuth } from '../auth.js';
+
 const BASE = '/api';
 
+let isRedirecting = false;
+
+function handleUnauthorized() {
+  if (isRedirecting) return;
+  isRedirecting = true;
+  // Don't call auth.logout() — token is already invalid server-side.
+  // Just clear local storage and redirect to show login page.
+  try { localStorage.clear(); sessionStorage.clear(); } catch {}
+  window.location.href = '/';
+}
+
 async function request(path, options = {}) {
+  let token = null;
+  try {
+    const auth = getAuth();
+    token = auth.getAccessToken();
+  } catch {
+    // Auth not initialized yet (e.g., during config fetch)
+  }
+
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...options.headers,
+  };
+
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
     ...options,
+    headers,
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
+
+  if (res.status === 401) {
+    handleUnauthorized();
+    throw new Error('Authentication required');
+  }
+
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Request failed');
   return data;
