@@ -7,6 +7,8 @@ import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { startWatcher } from './watcher.js';
+import { createAuthMiddleware } from './middleware/auth.js';
+import authProxyRouter from './routes/authProxy.js';
 import userRoutes from './routes/users.js';
 import groupRoutes from './routes/groups.js';
 import sudoerRoutes from './routes/sudoers.js';
@@ -22,25 +24,42 @@ const io = new Server(server, { cors: { origin: false } });
 app.use(cors({ origin: false }));
 app.use(express.json());
 
-// Health check
+// 1. Auth config endpoint (public — frontend needs this before login)
+app.get('/auth/config', (req, res) => {
+  res.json({
+    accountsUrl: process.env.ACCOUNTS_URL,
+    clientId: process.env.OAUTH_CLIENT_ID,
+    redirectUri: process.env.OAUTH_REDIRECT_URI,
+    postLogoutRedirectUri: process.env.OAUTH_POST_LOGOUT_REDIRECT_URI || '',
+  });
+});
+
+// 2. Auth proxy routes (no auth — SDK uses these for token exchange)
+app.use('/auth/proxy', authProxyRouter);
+
+// 3. Health check (public)
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', hostname: os.hostname() });
 });
 
-// Rate limit BEFORE routes
+// 4. Rate limiters
 const passwordLimiter = rateLimit({ windowMs: 60000, max: 10 });
 app.use('/api/users/:username/password', passwordLimiter);
-
 const sessionKillLimiter = rateLimit({ windowMs: 60000, max: 10 });
 app.use('/api/sessions/:terminal', sessionKillLimiter);
 
-// Routes
+// 5. Auth middleware (protects all /api/* except /api/health which is above)
+if (process.env.ACCOUNTS_URL) {
+  app.use('/api', createAuthMiddleware());
+}
+
+// 6. Protected routes
 app.use('/api/users', userRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/sudoers', sudoerRoutes);
 app.use('/api/sessions', sessionRoutes);
 
-// Serve static files in production
+// 7. Static files + SPA catch-all (LAST)
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(join(__dirname, '..', 'client', 'dist')));
   app.get('*', (req, res) => {
