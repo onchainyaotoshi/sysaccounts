@@ -1,0 +1,23 @@
+services:
+  server-user-management:
+    build: .
+    container_name: server-user-management
+    pid: "host"
+    privileged: true
+    ports:
+      - "127.0.0.1:9998:9998"
+    volumes:
+      - /etc/passwd:/etc/passwd
+      - /etc/shadow:/etc/shadow
+      - /etc/group:/etc/group
+      - /etc/gshadow:/etc/gshadow
+      - /etc/login.defs:/etc/login.defs:ro
+      - /etc/sudoers:/etc/sudoers
+      - /etc/sudoers.d:/etc/sudoers.d
+      - /home:/home
+      - /var/run/utmp:/var/run/utmp:ro
+      - /var/log/wtmp:/var/log/wtmp:ro
+    environment:
+      - PORT=9998
+      - HOST=0.0.0.0
+    restart: unless-stopped
