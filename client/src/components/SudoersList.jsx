@@ -92,7 +92,7 @@ export default function SudoersList() {
                   <input required value={form.customRule} onChange={e => setForm({ ...form, customRule: e.target.value })} placeholder="ALL=(ALL) NOPASSWD: /path/to/command" />
                   <small style={{ color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
                     Format: ALL=(ALL) NOPASSWD: /path/to/command1, /path/to/command2 &mdash;{' '}
-                    <a href="https://www.sudo.ws/docs/man/sudoers/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-green)' }}>Learn sudoers rule format</a>
+                    <a href="https://man7.org/linux/man-pages/man5/sudoers.5.html" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-green)' }}>Learn sudoers rule format</a>
                   </small>
                 </div>
               )}
