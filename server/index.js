@@ -85,7 +85,7 @@ if (process.env.ACCOUNTS_URL) {
     const token = socket.handshake.auth?.token;
     if (!token) return next(new Error('Authentication required'));
     try {
-      const response = await fetch(`${process.env.ACCOUNTS_URL}/me`, {
+      const response = await fetch(`${process.env.ACCOUNTS_URL}/api/proxy/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) return next(new Error('Invalid token'));

@@ -27,8 +27,8 @@ async function proxyRequest(accountsPath, req, res) {
   }
 }
 
-router.post('/token', (req, res) => proxyRequest('/token', req, res));
-router.get('/me', (req, res) => proxyRequest('/me', req, res));
-router.post('/logout', (req, res) => proxyRequest('/logout', req, res));
+router.post('/token', (req, res) => proxyRequest('/api/proxy/token', req, res));
+router.get('/me', (req, res) => proxyRequest('/api/proxy/me', req, res));
+router.post('/logout', (req, res) => proxyRequest('/api/proxy/logout', req, res));
 
 export default router;

@@ -27,7 +27,7 @@ describe('auth proxy routes', () => {
     const res = await request(app).post('/auth/proxy/token').send({ grant_type: 'authorization_code', code: 'abc' });
     expect(res.status).toBe(200);
     expect(res.body.access_token).toBe('tok');
-    expect(mockFetch).toHaveBeenCalledWith('https://accounts.test/token', expect.objectContaining({ method: 'POST' }));
+    expect(mockFetch).toHaveBeenCalledWith('https://accounts.test/api/proxy/token', expect.objectContaining({ method: 'POST' }));
   });
 
   it('GET /auth/proxy/me forwards to accounts /me', async () => {
@@ -41,7 +41,7 @@ describe('auth proxy routes', () => {
     const res = await request(app).get('/auth/proxy/me').set('Authorization', 'Bearer tok123');
     expect(res.status).toBe(200);
     expect(res.body.sub).toBe('123');
-    expect(mockFetch).toHaveBeenCalledWith('https://accounts.test/me', expect.objectContaining({
+    expect(mockFetch).toHaveBeenCalledWith('https://accounts.test/api/proxy/me', expect.objectContaining({
       headers: expect.objectContaining({ Authorization: 'Bearer tok123' }),
     }));
   });
@@ -56,7 +56,7 @@ describe('auth proxy routes', () => {
 
     const res = await request(app).post('/auth/proxy/logout').set('Authorization', 'Bearer tok').send({ token: 'tok' });
     expect(res.status).toBe(200);
-    expect(mockFetch).toHaveBeenCalledWith('https://accounts.test/logout', expect.objectContaining({ method: 'POST' }));
+    expect(mockFetch).toHaveBeenCalledWith('https://accounts.test/api/proxy/logout', expect.objectContaining({ method: 'POST' }));
   });
 
   it('returns 502 when accounts server is unreachable', async () => {
