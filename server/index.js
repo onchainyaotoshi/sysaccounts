@@ -103,7 +103,7 @@ io.on('connection', (socket) => {
 const watchers = startWatcher(io);
 
 // Start server
-const PORT = process.env.PORT || 9998;
+const PORT = process.env.PORT || 9995;
 const HOST = process.env.HOST || '127.0.0.1';
 
 server.listen(PORT, HOST, () => {
