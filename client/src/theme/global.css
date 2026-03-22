@@ -66,6 +66,9 @@ tr:hover td { background: var(--bg-hover); }
 .modal .form-group { margin-bottom: 12px; }
 .modal .form-group label { display: block; color: var(--text-secondary); margin-bottom: 4px; font-size: 12px; }
 .modal .form-group input, .modal .form-group select { width: 100%; }
+.modal .form-group.checkbox-group { display: flex; align-items: center; gap: 8px; }
+.modal .form-group.checkbox-group label { display: inline; margin-bottom: 0; }
+.modal .form-group.checkbox-group input[type="checkbox"] { width: auto; }
 .modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
 
 .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; }
