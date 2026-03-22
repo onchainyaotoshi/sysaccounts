@@ -28,9 +28,12 @@ export async function listSudoers() {
   return rules;
 }
 
-const SUDO_RULE_RE = /^ALL=\([A-Za-z0-9:, ]+\)\s+(NOPASSWD:\s*)?(ALL|\/[\w\/., -]+(\s*,\s*\/[\w\/., -]+)*)$/;
+const SUDO_RULE_RE = /^ALL=\(([a-z_][a-z0-9_-]*|ALL)(:[a-z_][a-z0-9_-]*|:ALL)?\)\s+(NOPASSWD:\s*)?(ALL|\/[a-z0-9\/_.-]+(\s*,\s*\/[a-z0-9\/_.-]+)*)$/;
 
 export async function grantSudo(username, rule) {
+  if (rule.includes('..')) {
+    throw new Error('Invalid sudo rule format: path traversal not allowed');
+  }
   if (!SUDO_RULE_RE.test(rule)) {
     throw new Error('Invalid sudo rule format. Expected: ALL=(ALL) ALL or ALL=(ALL) NOPASSWD: /path/to/cmd');
   }
