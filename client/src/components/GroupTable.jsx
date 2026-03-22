@@ -9,18 +9,24 @@ export default function GroupTable({ socketOn }) {
   const [groups, setGroups] = useState([]);
   const [showSystem, setShowSystem] = useState(false);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const addToast = useToast();
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const fetchGroups = async () => {
-    try { const data = await api.getGroups({ system: showSystem, search }); setGroups(data.groups); }
+    try { const data = await api.getGroups({ system: showSystem, search: debouncedSearch }); setGroups(data.groups); }
     catch (err) { addToast(err.message, 'error'); }
   };
 
-  useEffect(() => { fetchGroups(); }, [showSystem, search]);
-  useEffect(() => { return socketOn('groups:changed', (payload) => { setGroups(payload.data.filter(g => showSystem || g.gid >= 1000 || g.gid === 0)); }); }, [socketOn, showSystem]);
+  useEffect(() => { fetchGroups(); }, [showSystem, debouncedSearch]);
+  useEffect(() => { return socketOn('groups:changed', () => { fetchGroups(); }); }, [socketOn, showSystem, debouncedSearch]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;

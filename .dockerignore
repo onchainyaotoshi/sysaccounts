@@ -1,6 +1,9 @@
-node_modules
-client/node_modules
-client/dist
 .git
-docs
+.env
+.env.*
+!.env.example
+node_modules
 *.md
+docs/
+server/__tests__/
+.dockerignore

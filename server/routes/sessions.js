@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/logins', async (req, res) => {
-  try { const limit = Number(req.query.limit) || 50; const logins = await getLastLogins(limit); res.json({ logins }); }
+  try { const limit = Math.min(Number(req.query.limit) || 50, 500); const logins = await getLastLogins(limit); res.json({ logins }); }
   catch (err) { res.status(500).json({ error: 'COMMAND_FAILED', message: err.message }); }
 });
 

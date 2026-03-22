@@ -18,8 +18,11 @@ COPY server/ ./server/
 COPY --from=builder /app/client/dist ./client/dist
 
 ENV NODE_ENV=production
-ENV PORT=9998
+ENV PORT=9995
 ENV HOST=0.0.0.0
-EXPOSE 9998
+EXPOSE 9995
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD wget -qO- http://localhost:${PORT}/api/health || exit 1
 
 CMD ["node", "server/index.js"]

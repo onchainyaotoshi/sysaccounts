@@ -2,6 +2,7 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import helmet from 'helmet';
 import os from 'os';
 import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
@@ -21,8 +22,9 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, { cors: { origin: false } });
 
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: false }));
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
 
 // 1. Auth config endpoint (public — frontend needs this before login)
 app.get('/auth/config', (req, res) => {
@@ -43,10 +45,10 @@ app.get('/api/health', (req, res) => {
 });
 
 // 4. Rate limiters
+const apiLimiter = rateLimit({ windowMs: 60000, max: 60, standardHeaders: true, legacyHeaders: false });
+app.use('/api', apiLimiter);
 const passwordLimiter = rateLimit({ windowMs: 60000, max: 10 });
 app.use('/api/users/:username/password', passwordLimiter);
-const sessionKillLimiter = rateLimit({ windowMs: 60000, max: 10 });
-app.use('/api/sessions/:terminal', sessionKillLimiter);
 
 // 5. Auth middleware (protects all /api/* except /api/health which is above)
 if (process.env.ACCOUNTS_URL) {
@@ -59,6 +61,11 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/sudoers', sudoerRoutes);
 app.use('/api/sessions', sessionRoutes);
 
+// API 404 — must come after all /api routes
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'NOT_FOUND', message: 'Endpoint not found' });
+});
+
 // 7. Static files + SPA catch-all (LAST)
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(join(__dirname, '..', 'client', 'dist')));
@@ -67,7 +74,24 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// WebSocket
+// WebSocket auth
+if (process.env.ACCOUNTS_URL) {
+  io.use(async (socket, next) => {
+    const token = socket.handshake.auth?.token;
+    if (!token) return next(new Error('Authentication required'));
+    try {
+      const response = await fetch(`${process.env.ACCOUNTS_URL}/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) return next(new Error('Invalid token'));
+      socket.user = await response.json();
+      next();
+    } catch {
+      next(new Error('Authentication service unavailable'));
+    }
+  });
+}
+
 io.on('connection', (socket) => {
   console.log(`Client connected: ${socket.id}`);
   socket.on('disconnect', () => {

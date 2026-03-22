@@ -9,7 +9,10 @@ function handleUnauthorized() {
   isRedirecting = true;
   // Don't call auth.logout() — token is already invalid server-side.
   // Just clear local storage and redirect to show login page.
-  try { localStorage.clear(); sessionStorage.clear(); } catch {}
+  try {
+    const authKeys = ['access_token', 'refresh_token', 'token_type', 'expires_at', 'id_token', 'code_verifier', 'auth_state'];
+    authKeys.forEach(k => { localStorage.removeItem(k); sessionStorage.removeItem(k); });
+  } catch {}
   window.location.href = '/';
 }
 
@@ -39,6 +42,11 @@ async function request(path, options = {}) {
     throw new Error('Authentication required');
   }
 
+  const contentType = res.headers.get('content-type');
+  if (!contentType || !contentType.includes('application/json')) {
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+    return {};
+  }
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Request failed');
   return data;
@@ -46,25 +54,25 @@ async function request(path, options = {}) {
 
 export const api = {
   getUsers: (params = {}) => { const qs = new URLSearchParams(params).toString(); return request(`/users?${qs}`); },
-  getUser: (username) => request(`/users/${username}`),
+  getUser: (username) => request(`/users/${encodeURIComponent(username)}`),
   createUser: (body) => request('/users', { method: 'POST', body }),
-  deleteUser: (username, removeHome = false) => request(`/users/${username}?removeHome=${removeHome}`, { method: 'DELETE' }),
-  modifyUser: (username, body) => request(`/users/${username}`, { method: 'PATCH', body }),
-  changePassword: (username, password) => request(`/users/${username}/password`, { method: 'POST', body: { password } }),
-  lockUser: (username, locked) => request(`/users/${username}/lock`, { method: 'POST', body: { locked } }),
-  changeAging: (username, body) => request(`/users/${username}/aging`, { method: 'PATCH', body }),
+  deleteUser: (username, removeHome = false) => request(`/users/${encodeURIComponent(username)}?removeHome=${removeHome}`, { method: 'DELETE' }),
+  modifyUser: (username, body) => request(`/users/${encodeURIComponent(username)}`, { method: 'PATCH', body }),
+  changePassword: (username, password) => request(`/users/${encodeURIComponent(username)}/password`, { method: 'POST', body: { password } }),
+  lockUser: (username, locked) => request(`/users/${encodeURIComponent(username)}/lock`, { method: 'POST', body: { locked } }),
+  changeAging: (username, body) => request(`/users/${encodeURIComponent(username)}/aging`, { method: 'PATCH', body }),
   getGroups: (params = {}) => { const qs = new URLSearchParams(params).toString(); return request(`/groups?${qs}`); },
   createGroup: (body) => request('/groups', { method: 'POST', body }),
-  deleteGroup: (name) => request(`/groups/${name}`, { method: 'DELETE' }),
-  modifyGroup: (name, body) => request(`/groups/${name}`, { method: 'PATCH', body }),
-  addMembers: (groupName, usernames) => request(`/groups/${groupName}/members`, { method: 'POST', body: { usernames } }),
-  removeMember: (groupName, username) => request(`/groups/${groupName}/members/${username}`, { method: 'DELETE' }),
+  deleteGroup: (name) => request(`/groups/${encodeURIComponent(name)}`, { method: 'DELETE' }),
+  modifyGroup: (name, body) => request(`/groups/${encodeURIComponent(name)}`, { method: 'PATCH', body }),
+  addMembers: (groupName, usernames) => request(`/groups/${encodeURIComponent(groupName)}/members`, { method: 'POST', body: { usernames } }),
+  removeMember: (groupName, username) => request(`/groups/${encodeURIComponent(groupName)}/members/${encodeURIComponent(username)}`, { method: 'DELETE' }),
   getSudoers: () => request('/sudoers'),
   grantSudo: (body) => request('/sudoers', { method: 'POST', body }),
-  modifySudo: (username, rule) => request(`/sudoers/${username}`, { method: 'PATCH', body: { rule } }),
-  revokeSudo: (username) => request(`/sudoers/${username}`, { method: 'DELETE' }),
+  modifySudo: (username, rule) => request(`/sudoers/${encodeURIComponent(username)}`, { method: 'PATCH', body: { rule } }),
+  revokeSudo: (username) => request(`/sudoers/${encodeURIComponent(username)}`, { method: 'DELETE' }),
   getSessions: () => request('/sessions'),
   getLogins: (limit = 50) => request(`/sessions/logins?limit=${limit}`),
-  killSession: (terminal) => request(`/sessions/${terminal}`, { method: 'DELETE' }),
+  killSession: (terminal) => request(`/sessions/${encodeURIComponent(terminal)}`, { method: 'DELETE' }),
   getHealth: () => request('/health'),
 };

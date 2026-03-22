@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api/client.js';
 import { useToast } from './Toast.jsx';
+import ConfirmDialog from './ConfirmDialog.jsx';
 
 export default function SessionList() {
   const [sessions, setSessions] = useState([]);
   const [logins, setLogins] = useState([]);
+  const [killTarget, setKillTarget] = useState(null);
   const addToast = useToast();
 
   const fetchData = async () => {
@@ -13,11 +15,12 @@ export default function SessionList() {
   };
   useEffect(() => { fetchData(); }, []);
 
-  const handleKill = async (terminal, user) => {
-    if (!confirm(`Kill session ${terminal} (${user})?`)) return;
+  const handleConfirmKill = async () => {
+    if (!killTarget) return;
     try {
-      await api.killSession(terminal);
-      addToast(`Session ${terminal} terminated`, 'success');
+      await api.killSession(killTarget.terminal);
+      addToast(`Session ${killTarget.terminal} terminated`, 'success');
+      setKillTarget(null);
       fetchData();
     } catch (err) { addToast(err.message, 'error'); }
   };
@@ -35,7 +38,7 @@ export default function SessionList() {
               <td>{s.terminal}</td>
               <td style={{ color: 'var(--text-secondary)' }}>{s.date}</td>
               <td style={{ color: 'var(--text-secondary)' }}>{s.host || '-'}</td>
-              <td><button onClick={() => handleKill(s.terminal, s.user)} style={{ background: 'var(--accent-red, #e74c3c)', color: '#fff', border: 'none', padding: '4px 10px', cursor: 'pointer', borderRadius: 4, fontSize: 12 }}>Kill</button></td>
+              <td><button onClick={() => setKillTarget({ terminal: s.terminal, user: s.user })} style={{ background: 'var(--accent-red, #e74c3c)', color: '#fff', border: 'none', padding: '4px 10px', cursor: 'pointer', borderRadius: 4, fontSize: 12 }}>Kill</button></td>
             </tr>
           ))}
         </tbody>
@@ -59,6 +62,7 @@ export default function SessionList() {
       </table>
       {logins.length === 0 && <p style={{ color: 'var(--text-muted)', padding: 20, textAlign: 'center' }}>No login history</p>}
       <button onClick={fetchData} style={{ marginTop: 16 }}>Refresh</button>
+      {killTarget && <ConfirmDialog title="Kill Session" message={`Kill session ${killTarget.terminal} (${killTarget.user})?`} onConfirm={handleConfirmKill} onCancel={() => setKillTarget(null)} />}
     </div>
   );
 }

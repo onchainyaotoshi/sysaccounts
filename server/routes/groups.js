@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { validateGroupname } from '../validator.js';
+import { validateGroupname, validateUsername } from '../validator.js';
 import { auditLog } from '../logger.js';
 import { listGroups, createGroup, deleteGroup, modifyGroup, addMember, removeMember } from '../services/groupService.js';
 
@@ -27,6 +27,7 @@ router.post('/', async (req, res) => {
 });
 
 router.delete('/:groupname', async (req, res) => {
+  if (!validateGroupname(req.params.groupname)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Invalid group name format' });
   try {
     await deleteGroup(req.params.groupname);
     auditLog('DELETE_GROUP', req.params.groupname, req.ip, true);
@@ -35,7 +36,10 @@ router.delete('/:groupname', async (req, res) => {
 });
 
 router.patch('/:groupname', async (req, res) => {
+  if (!validateGroupname(req.params.groupname)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Invalid group name format' });
   const { newName, gid } = req.body;
+  if (newName && !validateGroupname(newName)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Invalid new group name format' });
+  if (gid !== undefined && (!Number.isInteger(Number(gid)) || Number(gid) < 0)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'gid must be a positive integer' });
   try {
     await modifyGroup(req.params.groupname, { newName, gid });
     auditLog('MODIFY_GROUP', req.params.groupname, req.ip, true);
@@ -44,8 +48,12 @@ router.patch('/:groupname', async (req, res) => {
 });
 
 router.post('/:groupname/members', async (req, res) => {
+  if (!validateGroupname(req.params.groupname)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Invalid group name format' });
   const { usernames } = req.body;
   if (!Array.isArray(usernames) || usernames.length === 0) return res.status(400).json({ error: 'INVALID_INPUT', message: 'usernames array is required' });
+  for (const username of usernames) {
+    if (!validateUsername(username)) return res.status(400).json({ error: 'INVALID_USERNAME', message: `Invalid username format: ${username}` });
+  }
   try {
     for (const username of usernames) { await addMember(req.params.groupname, username); }
     auditLog('ADD_MEMBERS', `${req.params.groupname}: ${usernames.join(',')}`, req.ip, true);
@@ -54,6 +62,8 @@ router.post('/:groupname/members', async (req, res) => {
 });
 
 router.delete('/:groupname/members/:username', async (req, res) => {
+  if (!validateGroupname(req.params.groupname)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Invalid group name format' });
+  if (!validateUsername(req.params.username)) return res.status(400).json({ error: 'INVALID_USERNAME', message: 'Invalid username format' });
   try {
     await removeMember(req.params.groupname, req.params.username);
     auditLog('REMOVE_MEMBER', `${req.params.groupname}: ${req.params.username}`, req.ip, true);

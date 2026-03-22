@@ -9,18 +9,24 @@ export default function UserTable({ socketOn }) {
   const [users, setUsers] = useState([]);
   const [showSystem, setShowSystem] = useState(false);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const addToast = useToast();
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const fetchUsers = async () => {
-    try { const data = await api.getUsers({ system: showSystem, search, limit: 500 }); setUsers(data.users); }
+    try { const data = await api.getUsers({ system: showSystem, search: debouncedSearch, limit: 500 }); setUsers(data.users); }
     catch (err) { addToast(err.message, 'error'); }
   };
 
-  useEffect(() => { fetchUsers(); }, [showSystem, search]);
-  useEffect(() => { return socketOn('users:changed', (payload) => { setUsers(payload.data.filter(u => showSystem || u.uid >= 1000 || u.uid === 0)); }); }, [socketOn, showSystem]);
+  useEffect(() => { fetchUsers(); }, [showSystem, debouncedSearch]);
+  useEffect(() => { return socketOn('users:changed', () => { fetchUsers(); }); }, [socketOn, showSystem, debouncedSearch]);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;

@@ -16,7 +16,7 @@ export function parseSudoersFile(content) {
 
 export async function listSudoers() {
   const rules = [];
-  try { const main = await readFile('/etc/sudoers', 'utf-8'); rules.push(...parseSudoersFile(main)); } catch {}
+  try { const main = await readFile('/etc/sudoers', 'utf-8'); rules.push(...parseSudoersFile(main)); } catch (err) { console.error('Failed to read sudoers:', err.message); }
   try {
     const files = await readdir('/etc/sudoers.d');
     for (const file of files) {
@@ -24,11 +24,16 @@ export async function listSudoers() {
       const content = await readFile(`/etc/sudoers.d/${file}`, 'utf-8');
       rules.push(...parseSudoersFile(content));
     }
-  } catch {}
+  } catch (err) { console.error('Failed to read sudoers:', err.message); }
   return rules;
 }
 
+const SUDO_RULE_RE = /^ALL=\([A-Za-z0-9:, ]+\)\s+(NOPASSWD:\s*)?(ALL|\/[\w\/., -]+(\s*,\s*\/[\w\/., -]+)*)$/;
+
 export async function grantSudo(username, rule) {
+  if (!SUDO_RULE_RE.test(rule)) {
+    throw new Error('Invalid sudo rule format. Expected: ALL=(ALL) ALL or ALL=(ALL) NOPASSWD: /path/to/cmd');
+  }
   const content = `${username} ${rule}\n`;
   const filePath = `/etc/sudoers.d/${username}`;
   await writeFile(filePath, content, { mode: 0o440 });

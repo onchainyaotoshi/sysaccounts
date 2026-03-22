@@ -53,7 +53,7 @@ export function mergeUserData(users, shadow) {
 export async function listUsers() {
   const [passwdData, shadowData] = await Promise.all([
     readFile('/etc/passwd', 'utf-8'),
-    readFile('/etc/shadow', 'utf-8').catch(() => ''),
+    readFile('/etc/shadow', 'utf-8').catch(err => { if (err.code !== 'ENOENT') console.error('Failed to read shadow:', err.message); return ''; }),
   ]);
   const users = parsePasswd(passwdData);
   const shadow = parseShadow(shadowData);
@@ -133,18 +133,7 @@ export async function lockUser(username, locked) {
 }
 
 export async function changePassword(username, password) {
-  const { execFile } = await import('child_process');
-  const inDocker = await (await import('./executor.js')).isDocker();
-  const { cmd, args } = (await import('./executor.js')).buildCommand('chpasswd', [], inDocker);
-
-  return new Promise((resolve, reject) => {
-    const proc = execFile(cmd, args, (error) => {
-      if (error) reject(new Error(error.message));
-      else resolve();
-    });
-    proc.stdin.write(`${username}:${password}\n`);
-    proc.stdin.end();
-  });
+  await execute('chpasswd', [], { stdin: `${username}:${password}\n` });
 }
 
 export async function changeAging(username, { minDays, maxDays, warnDays, inactiveDays, expireDate }) {

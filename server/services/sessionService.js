@@ -57,11 +57,11 @@ export function parseLast(output) {
 }
 
 export async function getActiveSessions() {
-  try { const output = await execute('who', []); return parseWho(output); } catch { return []; }
+  try { const output = await execute('who', []); return parseWho(output); } catch (err) { console.error('Failed to get active sessions:', err.message); return []; }
 }
 
 export async function getLastLogins(limit = 50) {
-  try { const output = await execute('last', ['-F', '-n', String(limit)]); return parseLast(output); } catch { return []; }
+  try { const output = await execute('last', ['-F', '-n', String(limit)]); return parseLast(output); } catch (err) { console.error('Failed to get active sessions:', err.message); return []; }
 }
 
 export async function killSession(terminal) {

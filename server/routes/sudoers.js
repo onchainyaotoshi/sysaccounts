@@ -23,6 +23,7 @@ router.post('/', async (req, res) => {
 });
 
 router.patch('/:username', async (req, res) => {
+  if (!validateUsername(req.params.username)) return res.status(400).json({ error: 'INVALID_USERNAME', message: 'Invalid username format' });
   const { rule } = req.body;
   if (!rule) return res.status(400).json({ error: 'INVALID_INPUT', message: 'rule is required' });
   try { await modifySudo(req.params.username, rule); auditLog('MODIFY_SUDO', req.params.username, req.ip, true); res.json({ message: `Sudo rule updated for ${req.params.username}` }); }
@@ -30,6 +31,7 @@ router.patch('/:username', async (req, res) => {
 });
 
 router.delete('/:username', async (req, res) => {
+  if (!validateUsername(req.params.username)) return res.status(400).json({ error: 'INVALID_USERNAME', message: 'Invalid username format' });
   try { await revokeSudo(req.params.username); auditLog('REVOKE_SUDO', req.params.username, req.ip, true); res.json({ message: `Sudo revoked for ${req.params.username}` }); }
   catch (err) { auditLog('REVOKE_SUDO', req.params.username, req.ip, false, err.message); res.status(500).json({ error: 'COMMAND_FAILED', message: err.message }); }
 });

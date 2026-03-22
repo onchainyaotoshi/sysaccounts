@@ -24,17 +24,21 @@ export function buildCommand(cmd, args, inDocker) {
   return { cmd, args };
 }
 
-export async function execute(cmd, args = []) {
+export async function execute(cmd, args = [], options = {}) {
   const inDocker = await isDocker();
   const { cmd: finalCmd, args: finalArgs } = buildCommand(cmd, args, inDocker);
 
   return new Promise((resolve, reject) => {
-    execFile(finalCmd, finalArgs, { timeout: 10000 }, (error, stdout, stderr) => {
+    const proc = execFile(finalCmd, finalArgs, { timeout: 10000 }, (error, stdout, stderr) => {
       if (error) {
         reject(new Error(stderr || error.message));
       } else {
         resolve(stdout);
       }
     });
+    if (options.stdin) {
+      proc.stdin.write(options.stdin);
+      proc.stdin.end();
+    }
   });
 }

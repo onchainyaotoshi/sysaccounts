@@ -1,9 +1,12 @@
 import { Router } from 'express';
 
-const ACCOUNTS_URL = process.env.ACCOUNTS_URL;
 const router = Router();
 
 async function proxyRequest(accountsPath, req, res) {
+  const accountsUrl = process.env.ACCOUNTS_URL;
+  if (!accountsUrl) {
+    return res.status(503).json({ error: 'AUTH_UNAVAILABLE', message: 'Auth not configured' });
+  }
   try {
     const headers = {};
     if (req.headers['content-type']) headers['Content-Type'] = req.headers['content-type'];
@@ -14,7 +17,7 @@ async function proxyRequest(accountsPath, req, res) {
       options.body = JSON.stringify(req.body);
     }
 
-    const response = await fetch(`${ACCOUNTS_URL}${accountsPath}`, options);
+    const response = await fetch(`${accountsUrl}${accountsPath}`, options);
     const body = await response.text();
 
     const contentType = response.headers.get('content-type');
