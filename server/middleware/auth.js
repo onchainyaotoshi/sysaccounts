@@ -36,7 +36,7 @@ export function createAuthMiddleware() {
     }
 
     try {
-      const response = await fetch(`${process.env.ACCOUNTS_URL}/me`, {
+      const response = await fetch(`${process.env.ACCOUNTS_URL}/api/proxy/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
