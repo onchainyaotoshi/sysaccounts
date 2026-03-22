@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { validateGroupname, validateUsername } from '../validator.js';
+import { validateGroupname, validateUsername, validateInteger } from '../validator.js';
 import { auditLog } from '../logger.js';
 import { listGroups, createGroup, deleteGroup, modifyGroup, addMember, removeMember } from '../services/groupService.js';
 
@@ -22,6 +22,7 @@ router.post('/', async (req, res) => {
   const { name, gid } = req.body;
   if (!name) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Group name is required' });
   if (!validateGroupname(name)) return res.status(400).json({ error: 'INVALID_USERNAME', message: 'Invalid group name format' });
+  if (gid !== undefined && !validateInteger(gid, 0, 65535)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'gid must be an integer between 0 and 65535' });
   try {
     await createGroup(name, gid);
     auditLog('CREATE_GROUP', name, req.ip, true, '', req.user?.email || req.user?.sub || 'anonymous');
@@ -50,7 +51,7 @@ router.patch('/:groupname', async (req, res) => {
   if (!validateGroupname(req.params.groupname)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Invalid group name format' });
   const { newName, gid } = req.body;
   if (newName && !validateGroupname(newName)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Invalid new group name format' });
-  if (gid !== undefined && (!Number.isInteger(Number(gid)) || Number(gid) < 0)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'gid must be a positive integer' });
+  if (gid !== undefined && !validateInteger(gid, 0, 65535)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'gid must be an integer between 0 and 65535' });
   try {
     await modifyGroup(req.params.groupname, { newName, gid });
     auditLog('MODIFY_GROUP', req.params.groupname, req.ip, true, '', req.user?.email || req.user?.sub || 'anonymous');
