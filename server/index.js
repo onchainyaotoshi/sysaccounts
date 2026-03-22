@@ -3,7 +3,6 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
-import os from 'os';
 import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -22,7 +21,7 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, { cors: { origin: false } });
 
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({ contentSecurityPolicy: false, hsts: { maxAge: 31536000, includeSubDomains: true } }));
 app.use(cors({ origin: false }));
 app.use(express.json({ limit: '100kb' }));
 
@@ -41,7 +40,7 @@ app.use('/auth/proxy', authProxyRouter);
 
 // 3. Health check (public)
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', hostname: os.hostname() });
+  res.json({ status: 'ok' });
 });
 
 // 4. Rate limiters
