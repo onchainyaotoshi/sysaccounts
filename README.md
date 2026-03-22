@@ -53,6 +53,17 @@ graph TD
 
 ## Setup
 
+```mermaid
+flowchart LR
+    A["Clone repo"] --> B["cp .env.example .env"]
+    B --> C["Edit .env<br/>(port, OAuth)"]
+    C --> D["docker compose<br/>up -d --build"]
+    D --> E["App running on<br/>127.0.0.1:PORT"]
+    E --> F{"Auth<br/>needed?"}
+    F -->|Yes| G["Setup accounts service<br/>+ reverse proxy (HTTPS)"]
+    F -->|No| H["Ready<br/>(dev/testing only)"]
+```
+
 ### 1. Clone
 
 ```bash
