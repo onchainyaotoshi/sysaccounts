@@ -14,8 +14,8 @@ export async function initAuth() {
     redirectUri: config.redirectUri,
     postLogoutRedirectUri: config.postLogoutRedirectUri || undefined,
     accountsUrl: config.accountsUrl,
-    apiPathPrefix: '/auth/proxy',
   });
+  authInstance.apiUrl = (path) => `/auth/proxy${path}`;
 
   return authInstance;
 }
