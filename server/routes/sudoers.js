@@ -44,8 +44,12 @@ router.patch('/:username', async (req, res) => {
     res.json({ message: `Sudo rule updated for ${req.params.username}` });
   } catch (err) {
     auditLog('MODIFY_SUDO', req.params.username, req.ip, false, err.message, req.user?.email || req.user?.sub || 'anonymous');
-    console.error('Modify sudo failed:', err.message);
-    res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
+    if (err.code === 'INVALID_SUDO_RULE' || err.code === 'SUDOERS_SYNTAX') {
+      res.status(400).json({ error: err.code, message: err.message });
+    } else {
+      console.error('Modify sudo failed:', err.message);
+      res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
+    }
   }
 });
 
