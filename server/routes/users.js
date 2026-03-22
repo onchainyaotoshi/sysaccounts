@@ -58,10 +58,10 @@ router.post('/', async (req, res) => {
   }
   try {
     await createUser({ username, password, shell, home, gecos, groups, createHome });
-    auditLog('CREATE_USER', username, req.ip, true);
+    auditLog('CREATE_USER', username, req.ip, true, '', req.user?.email || req.user?.sub || 'anonymous');
     res.status(201).json({ message: `User ${username} created` });
   } catch (err) {
-    auditLog('CREATE_USER', username, req.ip, false, err.message);
+    auditLog('CREATE_USER', username, req.ip, false, err.message, req.user?.email || req.user?.sub || 'anonymous');
     if (err.message.includes('already exists')) {
       res.status(409).json({ error: 'USER_EXISTS', message: err.message });
     } else {
@@ -77,10 +77,10 @@ router.delete('/:username', async (req, res) => {
   const removeHome = req.query.removeHome === 'true';
   try {
     await deleteUser(username, removeHome);
-    auditLog('DELETE_USER', username, req.ip, true);
+    auditLog('DELETE_USER', username, req.ip, true, '', req.user?.email || req.user?.sub || 'anonymous');
     res.json({ message: `User ${username} deleted` });
   } catch (err) {
-    auditLog('DELETE_USER', username, req.ip, false, err.message);
+    auditLog('DELETE_USER', username, req.ip, false, err.message, req.user?.email || req.user?.sub || 'anonymous');
     console.error('Delete user failed:', err.message);
     res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
   }
@@ -95,10 +95,10 @@ router.patch('/:username', async (req, res) => {
   if (gecos && !validateGecos(gecos)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Invalid GECOS field' });
   try {
     await modifyUser(username, { shell, home, gecos });
-    auditLog('MODIFY_USER', username, req.ip, true);
+    auditLog('MODIFY_USER', username, req.ip, true, '', req.user?.email || req.user?.sub || 'anonymous');
     res.json({ message: `User ${username} modified` });
   } catch (err) {
-    auditLog('MODIFY_USER', username, req.ip, false, err.message);
+    auditLog('MODIFY_USER', username, req.ip, false, err.message, req.user?.email || req.user?.sub || 'anonymous');
     console.error('Modify user failed:', err.message);
     res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
   }
@@ -111,10 +111,10 @@ router.post('/:username/password', async (req, res) => {
   if (!password || !validatePassword(password)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Invalid password: must be 8-1024 characters, no newlines or colons' });
   try {
     await changePassword(username, password);
-    auditLog('CHANGE_PASSWORD', username, req.ip, true);
+    auditLog('CHANGE_PASSWORD', username, req.ip, true, '', req.user?.email || req.user?.sub || 'anonymous');
     res.json({ message: 'Password changed' });
   } catch (err) {
-    auditLog('CHANGE_PASSWORD', username, req.ip, false, err.message);
+    auditLog('CHANGE_PASSWORD', username, req.ip, false, err.message, req.user?.email || req.user?.sub || 'anonymous');
     console.error('Change password failed:', err.message);
     res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
   }
@@ -127,10 +127,10 @@ router.post('/:username/lock', async (req, res) => {
   if (typeof locked !== 'boolean') return res.status(400).json({ error: 'INVALID_INPUT', message: 'locked must be boolean' });
   try {
     await lockUser(username, locked);
-    auditLog(locked ? 'LOCK_USER' : 'UNLOCK_USER', username, req.ip, true);
+    auditLog(locked ? 'LOCK_USER' : 'UNLOCK_USER', username, req.ip, true, '', req.user?.email || req.user?.sub || 'anonymous');
     res.json({ message: `User ${username} ${locked ? 'locked' : 'unlocked'}` });
   } catch (err) {
-    auditLog(locked ? 'LOCK_USER' : 'UNLOCK_USER', username, req.ip, false, err.message);
+    auditLog(locked ? 'LOCK_USER' : 'UNLOCK_USER', username, req.ip, false, err.message, req.user?.email || req.user?.sub || 'anonymous');
     console.error('Lock/unlock user failed:', err.message);
     res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
   }
@@ -147,10 +147,10 @@ router.patch('/:username/aging', async (req, res) => {
   if (expireDate !== undefined && expireDate !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(expireDate)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'expireDate must be in YYYY-MM-DD format' });
   try {
     await changeAging(username, req.body);
-    auditLog('CHANGE_AGING', username, req.ip, true);
+    auditLog('CHANGE_AGING', username, req.ip, true, '', req.user?.email || req.user?.sub || 'anonymous');
     res.json({ message: 'Password aging updated' });
   } catch (err) {
-    auditLog('CHANGE_AGING', username, req.ip, false, err.message);
+    auditLog('CHANGE_AGING', username, req.ip, false, err.message, req.user?.email || req.user?.sub || 'anonymous');
     console.error('Change aging failed:', err.message);
     res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
   }
