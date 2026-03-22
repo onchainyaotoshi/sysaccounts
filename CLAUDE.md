@@ -66,6 +66,23 @@ docker compose up -d --build
 - API client sends Bearer token on every request, 401 → clear auth-specific storage keys + redirect to login
 - WebSocket connections send token via `socket.handshake.auth.token`
 
+### @yaotoshi/auth-sdk gotcha
+
+**CORS trap:** SDK's `apiUrl()` method constructs URLs as `accountsUrl + apiPathPrefix + path`. This means API calls (token exchange, /me, logout) go cross-origin to the accounts server, which will fail CORS because accounts server doesn't set `Access-Control-Allow-Origin` headers.
+
+**Fix:** Override `apiUrl()` after init to use relative paths through our backend auth proxy:
+
+```javascript
+authInstance = new YaotoshiAuth({ accountsUrl: config.accountsUrl, ... });
+authInstance.apiUrl = (path) => `/auth/proxy${path}`;
+```
+
+This makes:
+- API calls (token, /me, logout) → `/auth/proxy/*` (same-origin, no CORS) → backend forwards to accounts server
+- Login redirect → `accountsUrl/authorize` (browser redirect, not fetch — CORS doesn't apply)
+
+**Do NOT use `apiPathPrefix` config option** — it still prepends `accountsUrl`, causing cross-origin requests. The `apiUrl()` override is the only way to get relative paths.
+
 ## Docker Notes
 
 - Container needs `privileged: true` and `pid: "host"` to manage system users
