@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { validateUsername, validateShell, validateRequired, validateHome, validateGecos, validateInteger, validatePassword } from '../validator.js';
+import { validateUsername, validateShell, validateRequired, validateHome, validateGecos, validateInteger, validatePassword, validateGroupname } from '../validator.js';
 import { auditLog } from '../logger.js';
 import {
   listUsers, getUserDetail, createUser, deleteUser,
@@ -11,7 +11,9 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     let users = await listUsers();
-    const { system, search, limit = 50, offset = 0 } = req.query;
+    const { system, search } = req.query;
+    const limit = Math.max(1, Math.min(500, parseInt(req.query.limit, 10) || 50));
+    const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
     if (system !== 'true') {
       users = users.filter(u => u.uid >= 1000 || u.uid === 0);
     }
@@ -48,6 +50,12 @@ router.post('/', async (req, res) => {
   if (home && !validateHome(home)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Invalid home directory path' });
   if (gecos && !validateGecos(gecos)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Invalid GECOS field' });
   if (password && !validatePassword(password)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Invalid password: must be 8-1024 characters, no newlines or colons' });
+  if (groups) {
+    if (!Array.isArray(groups)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'groups must be an array' });
+    for (const group of groups) {
+      if (!validateGroupname(group)) return res.status(400).json({ error: 'INVALID_INPUT', message: `Invalid group name: ${group}` });
+    }
+  }
   try {
     await createUser({ username, password, shell, home, gecos, groups, createHome });
     auditLog('CREATE_USER', username, req.ip, true);
@@ -132,10 +140,10 @@ router.patch('/:username/aging', async (req, res) => {
   const { username } = req.params;
   if (!validateUsername(username)) return res.status(400).json({ error: 'INVALID_USERNAME', message: 'Invalid username format' });
   const { minDays, maxDays, warnDays, inactiveDays, expireDate } = req.body;
-  if (minDays !== undefined && !validateInteger(minDays)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'minDays must be an integer' });
-  if (maxDays !== undefined && !validateInteger(maxDays)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'maxDays must be an integer' });
-  if (warnDays !== undefined && !validateInteger(warnDays)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'warnDays must be an integer' });
-  if (inactiveDays !== undefined && !validateInteger(inactiveDays)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'inactiveDays must be an integer' });
+  if (minDays !== undefined && !validateInteger(minDays, 0, 99999)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'minDays must be an integer (0-99999)' });
+  if (maxDays !== undefined && !validateInteger(maxDays, 0, 99999)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'maxDays must be an integer (0-99999)' });
+  if (warnDays !== undefined && !validateInteger(warnDays, 0, 99999)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'warnDays must be an integer (0-99999)' });
+  if (inactiveDays !== undefined && !validateInteger(inactiveDays, 0, 99999)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'inactiveDays must be an integer (0-99999)' });
   if (expireDate !== undefined && expireDate !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(expireDate)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'expireDate must be in YYYY-MM-DD format' });
   try {
     await changeAging(username, req.body);
