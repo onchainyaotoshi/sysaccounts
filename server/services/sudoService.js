@@ -1,5 +1,6 @@
 import { readFile, writeFile, unlink, readdir } from 'fs/promises';
 import { execute } from './executor.js';
+import { CommandError } from '../errors.js';
 
 export function parseSudoersFile(content) {
   const rules = [];
@@ -32,16 +33,16 @@ const SUDO_RULE_RE = /^ALL=\(([a-z_][a-z0-9_-]*|ALL)(:[a-z_][a-z0-9_-]*|:ALL)?\)
 
 export async function grantSudo(username, rule) {
   if (rule.includes('..')) {
-    throw new Error('Invalid sudo rule format: path traversal not allowed');
+    throw new CommandError('Path traversal not allowed in sudo rules', 'INVALID_SUDO_RULE');
   }
   if (!SUDO_RULE_RE.test(rule)) {
-    throw new Error('Invalid sudo rule format. Expected: ALL=(ALL) ALL or ALL=(ALL) NOPASSWD: /path/to/cmd');
+    throw new CommandError('Invalid sudo rule format. Expected: ALL=(ALL) ALL or ALL=(ALL) NOPASSWD: /path/to/cmd', 'INVALID_SUDO_RULE');
   }
   const content = `${username} ${rule}\n`;
   const filePath = `/etc/sudoers.d/${username}`;
   await writeFile(filePath, content, { mode: 0o440 });
   try { await execute('visudo', ['-c', '-f', filePath]); }
-  catch (err) { await unlink(filePath); throw new Error(`Invalid sudoers syntax: ${err.message}`); }
+  catch (err) { await unlink(filePath); throw new CommandError(`Invalid sudoers syntax: ${err.message}`, 'SUDOERS_SYNTAX'); }
 }
 
 export async function modifySudo(username, rule) { await grantSudo(username, rule); }

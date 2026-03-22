@@ -22,10 +22,10 @@ jdoe ALL=(ALL) NOPASSWD: /usr/bin/apt
 
 describe('grantSudo validation', () => {
   it('rejects rules with path traversal', async () => {
-    await expect(grantSudo('testuser', 'ALL=(ALL) /usr/../bin/bash')).rejects.toThrow('Invalid sudo rule');
+    await expect(grantSudo('testuser', 'ALL=(ALL) /usr/../bin/bash')).rejects.toThrow('Path traversal not allowed in sudo rules');
   });
   it('rejects rules with .. in paths', async () => {
-    await expect(grantSudo('testuser', 'ALL=(ALL) NOPASSWD: /home/../../etc/shadow')).rejects.toThrow('Invalid sudo rule');
+    await expect(grantSudo('testuser', 'ALL=(ALL) NOPASSWD: /home/../../etc/shadow')).rejects.toThrow('Path traversal not allowed in sudo rules');
   });
   it('rejects rules with invalid user spec in parens', async () => {
     await expect(grantSudo('testuser', 'ALL=(ALL; rm -rf /) ALL')).rejects.toThrow('Invalid sudo rule');

@@ -1,5 +1,6 @@
 import { readFile } from 'fs/promises';
 import { execute } from './executor.js';
+import { CommandError } from '../errors.js';
 
 export function parsePasswd(data) {
   return data
@@ -106,7 +107,14 @@ export async function createUser({ username, password, shell, home, gecos, group
   if (createHome) args.push('-m');
   if (groups && groups.length > 0) args.push('-G', groups.join(','));
   args.push(username);
-  await execute('useradd', args);
+  try {
+    await execute('useradd', args);
+  } catch (err) {
+    if (err.message.includes('already exists')) {
+      throw new CommandError(err.message, 'USER_EXISTS');
+    }
+    throw new CommandError(err.message);
+  }
   if (password) {
     await changePassword(username, password);
   }
@@ -114,7 +122,14 @@ export async function createUser({ username, password, shell, home, gecos, group
 
 export async function deleteUser(username, removeHome = false) {
   const args = removeHome ? ['-r', username] : [username];
-  await execute('userdel', args);
+  try {
+    await execute('userdel', args);
+  } catch (err) {
+    if (err.message.includes('does not exist')) {
+      throw new CommandError(err.message, 'USER_NOT_FOUND');
+    }
+    throw new CommandError(err.message);
+  }
 }
 
 export async function modifyUser(username, { shell, home, gecos }) {
@@ -124,16 +139,28 @@ export async function modifyUser(username, { shell, home, gecos }) {
   if (gecos) args.push('-c', gecos);
   if (args.length === 0) return;
   args.push(username);
-  await execute('usermod', args);
+  try {
+    await execute('usermod', args);
+  } catch (err) {
+    throw new CommandError(err.message);
+  }
 }
 
 export async function lockUser(username, locked) {
   const flag = locked ? '-L' : '-U';
-  await execute('usermod', [flag, username]);
+  try {
+    await execute('usermod', [flag, username]);
+  } catch (err) {
+    throw new CommandError(err.message);
+  }
 }
 
 export async function changePassword(username, password) {
-  await execute('chpasswd', [], { stdin: `${username}:${password}\n` });
+  try {
+    await execute('chpasswd', [], { stdin: `${username}:${password}\n` });
+  } catch (err) {
+    throw new CommandError(err.message);
+  }
 }
 
 export async function changeAging(username, { minDays, maxDays, warnDays, inactiveDays, expireDate }) {
@@ -145,5 +172,9 @@ export async function changeAging(username, { minDays, maxDays, warnDays, inacti
   if (expireDate !== undefined) args.push('-E', expireDate || '-1');
   if (args.length === 0) return;
   args.push(username);
-  await execute('chage', args);
+  try {
+    await execute('chage', args);
+  } catch (err) {
+    throw new CommandError(err.message);
+  }
 }
