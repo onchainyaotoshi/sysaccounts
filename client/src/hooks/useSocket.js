@@ -1,12 +1,24 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io } from 'socket.io-client';
+import { getAuth } from '../auth.js';
 
 export function useSocket() {
   const socketRef = useRef(null);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const socket = io({ transports: ['websocket'] });
+    let token = null;
+    try {
+      const auth = getAuth();
+      token = auth.getAccessToken();
+    } catch {
+      // Auth not initialized yet
+    }
+
+    const socket = io({
+      transports: ['websocket'],
+      auth: token ? { token } : undefined,
+    });
     socketRef.current = socket;
     socket.on('connect', () => setConnected(true));
     socket.on('disconnect', () => setConnected(false));
