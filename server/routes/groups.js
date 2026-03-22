@@ -12,7 +12,10 @@ router.get('/', async (req, res) => {
     if (system !== 'true') { groups = groups.filter(g => g.gid >= 1000 || g.gid === 0); }
     if (search) { const q = search.toLowerCase(); groups = groups.filter(g => g.name.includes(q)); }
     res.json({ groups });
-  } catch (err) { res.status(500).json({ error: 'COMMAND_FAILED', message: err.message }); }
+  } catch (err) {
+    console.error('List groups failed:', err.message);
+    res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
+  }
 });
 
 router.post('/', async (req, res) => {
@@ -23,7 +26,11 @@ router.post('/', async (req, res) => {
     await createGroup(name, gid);
     auditLog('CREATE_GROUP', name, req.ip, true);
     res.status(201).json({ message: `Group ${name} created` });
-  } catch (err) { auditLog('CREATE_GROUP', name, req.ip, false, err.message); res.status(500).json({ error: 'COMMAND_FAILED', message: err.message }); }
+  } catch (err) {
+    auditLog('CREATE_GROUP', name, req.ip, false, err.message);
+    console.error('Create group failed:', err.message);
+    res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
+  }
 });
 
 router.delete('/:groupname', async (req, res) => {
@@ -32,7 +39,11 @@ router.delete('/:groupname', async (req, res) => {
     await deleteGroup(req.params.groupname);
     auditLog('DELETE_GROUP', req.params.groupname, req.ip, true);
     res.json({ message: `Group ${req.params.groupname} deleted` });
-  } catch (err) { auditLog('DELETE_GROUP', req.params.groupname, req.ip, false, err.message); res.status(500).json({ error: 'COMMAND_FAILED', message: err.message }); }
+  } catch (err) {
+    auditLog('DELETE_GROUP', req.params.groupname, req.ip, false, err.message);
+    console.error('Delete group failed:', err.message);
+    res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
+  }
 });
 
 router.patch('/:groupname', async (req, res) => {
@@ -44,7 +55,11 @@ router.patch('/:groupname', async (req, res) => {
     await modifyGroup(req.params.groupname, { newName, gid });
     auditLog('MODIFY_GROUP', req.params.groupname, req.ip, true);
     res.json({ message: `Group ${req.params.groupname} modified` });
-  } catch (err) { auditLog('MODIFY_GROUP', req.params.groupname, req.ip, false, err.message); res.status(500).json({ error: 'COMMAND_FAILED', message: err.message }); }
+  } catch (err) {
+    auditLog('MODIFY_GROUP', req.params.groupname, req.ip, false, err.message);
+    console.error('Modify group failed:', err.message);
+    res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
+  }
 });
 
 router.post('/:groupname/members', async (req, res) => {
@@ -58,7 +73,11 @@ router.post('/:groupname/members', async (req, res) => {
     for (const username of usernames) { await addMember(req.params.groupname, username); }
     auditLog('ADD_MEMBERS', `${req.params.groupname}: ${usernames.join(',')}`, req.ip, true);
     res.json({ message: `Members added to ${req.params.groupname}` });
-  } catch (err) { auditLog('ADD_MEMBERS', req.params.groupname, req.ip, false, err.message); res.status(500).json({ error: 'COMMAND_FAILED', message: err.message }); }
+  } catch (err) {
+    auditLog('ADD_MEMBERS', req.params.groupname, req.ip, false, err.message);
+    console.error('Add members failed:', err.message);
+    res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
+  }
 });
 
 router.delete('/:groupname/members/:username', async (req, res) => {
@@ -68,7 +87,11 @@ router.delete('/:groupname/members/:username', async (req, res) => {
     await removeMember(req.params.groupname, req.params.username);
     auditLog('REMOVE_MEMBER', `${req.params.groupname}: ${req.params.username}`, req.ip, true);
     res.json({ message: `${req.params.username} removed from ${req.params.groupname}` });
-  } catch (err) { auditLog('REMOVE_MEMBER', req.params.groupname, req.ip, false, err.message); res.status(500).json({ error: 'COMMAND_FAILED', message: err.message }); }
+  } catch (err) {
+    auditLog('REMOVE_MEMBER', req.params.groupname, req.ip, false, err.message);
+    console.error('Remove member failed:', err.message);
+    res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
+  }
 });
 
 export default router;

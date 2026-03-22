@@ -6,12 +6,18 @@ const router = Router();
 
 router.get('/', async (req, res) => {
   try { const sessions = await getActiveSessions(); res.json({ sessions }); }
-  catch (err) { res.status(500).json({ error: 'COMMAND_FAILED', message: err.message }); }
+  catch (err) {
+    console.error('Get active sessions failed:', err.message);
+    res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
+  }
 });
 
 router.get('/logins', async (req, res) => {
   try { const limit = Math.min(Number(req.query.limit) || 50, 500); const logins = await getLastLogins(limit); res.json({ logins }); }
-  catch (err) { res.status(500).json({ error: 'COMMAND_FAILED', message: err.message }); }
+  catch (err) {
+    console.error('Get last logins failed:', err.message);
+    res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
+  }
 });
 
 router.delete('/:terminal(*)', async (req, res) => {
@@ -23,7 +29,8 @@ router.delete('/:terminal(*)', async (req, res) => {
     await killSession(terminal);
     res.json({ message: `Session on ${terminal} terminated` });
   } catch (err) {
-    res.status(500).json({ error: 'COMMAND_FAILED', message: err.message });
+    console.error('Kill session failed:', err.message);
+    res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
   }
 });
 

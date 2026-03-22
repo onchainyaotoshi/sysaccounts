@@ -23,7 +23,8 @@ router.get('/', async (req, res) => {
     users = users.slice(Number(offset), Number(offset) + Number(limit));
     res.json({ users, total });
   } catch (err) {
-    res.status(500).json({ error: 'COMMAND_FAILED', message: err.message });
+    console.error('List users failed:', err.message);
+    res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
   }
 });
 
@@ -34,7 +35,8 @@ router.get('/:username', async (req, res) => {
     if (!user) return res.status(404).json({ error: 'USER_NOT_FOUND', message: 'User does not exist' });
     res.json(user);
   } catch (err) {
-    res.status(500).json({ error: 'COMMAND_FAILED', message: err.message });
+    console.error('Get user detail failed:', err.message);
+    res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
   }
 });
 
@@ -52,9 +54,12 @@ router.post('/', async (req, res) => {
     res.status(201).json({ message: `User ${username} created` });
   } catch (err) {
     auditLog('CREATE_USER', username, req.ip, false, err.message);
-    const status = err.message.includes('already exists') ? 409 : 500;
-    const code = status === 409 ? 'USER_EXISTS' : 'COMMAND_FAILED';
-    res.status(status).json({ error: code, message: err.message });
+    if (err.message.includes('already exists')) {
+      res.status(409).json({ error: 'USER_EXISTS', message: err.message });
+    } else {
+      console.error('Create user failed:', err.message);
+      res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
+    }
   }
 });
 
@@ -68,7 +73,8 @@ router.delete('/:username', async (req, res) => {
     res.json({ message: `User ${username} deleted` });
   } catch (err) {
     auditLog('DELETE_USER', username, req.ip, false, err.message);
-    res.status(500).json({ error: 'COMMAND_FAILED', message: err.message });
+    console.error('Delete user failed:', err.message);
+    res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
   }
 });
 
@@ -85,7 +91,8 @@ router.patch('/:username', async (req, res) => {
     res.json({ message: `User ${username} modified` });
   } catch (err) {
     auditLog('MODIFY_USER', username, req.ip, false, err.message);
-    res.status(500).json({ error: 'COMMAND_FAILED', message: err.message });
+    console.error('Modify user failed:', err.message);
+    res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
   }
 });
 
@@ -100,7 +107,8 @@ router.post('/:username/password', async (req, res) => {
     res.json({ message: 'Password changed' });
   } catch (err) {
     auditLog('CHANGE_PASSWORD', username, req.ip, false, err.message);
-    res.status(500).json({ error: 'COMMAND_FAILED', message: err.message });
+    console.error('Change password failed:', err.message);
+    res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
   }
 });
 
@@ -115,7 +123,8 @@ router.post('/:username/lock', async (req, res) => {
     res.json({ message: `User ${username} ${locked ? 'locked' : 'unlocked'}` });
   } catch (err) {
     auditLog(locked ? 'LOCK_USER' : 'UNLOCK_USER', username, req.ip, false, err.message);
-    res.status(500).json({ error: 'COMMAND_FAILED', message: err.message });
+    console.error('Lock/unlock user failed:', err.message);
+    res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
   }
 });
 
@@ -134,7 +143,8 @@ router.patch('/:username/aging', async (req, res) => {
     res.json({ message: 'Password aging updated' });
   } catch (err) {
     auditLog('CHANGE_AGING', username, req.ip, false, err.message);
-    res.status(500).json({ error: 'COMMAND_FAILED', message: err.message });
+    console.error('Change aging failed:', err.message);
+    res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
   }
 });
 
