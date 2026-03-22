@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { validateUsername, validateShell, validateRequired, validateHome, validateGecos, validateInteger } from '../validator.js';
+import { validateUsername, validateShell, validateRequired, validateHome, validateGecos, validateInteger, validatePassword } from '../validator.js';
 import { auditLog } from '../logger.js';
 import {
   listUsers, getUserDetail, createUser, deleteUser,
@@ -45,6 +45,7 @@ router.post('/', async (req, res) => {
   if (shell && !validateShell(shell)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Invalid shell path' });
   if (home && !validateHome(home)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Invalid home directory path' });
   if (gecos && !validateGecos(gecos)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Invalid GECOS field' });
+  if (password && !validatePassword(password)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Invalid password: must be 8-1024 characters, no newlines or colons' });
   try {
     await createUser({ username, password, shell, home, gecos, groups, createHome });
     auditLog('CREATE_USER', username, req.ip, true);
@@ -92,7 +93,7 @@ router.post('/:username/password', async (req, res) => {
   const { username } = req.params;
   if (!validateUsername(username)) return res.status(400).json({ error: 'INVALID_USERNAME', message: 'Invalid username format' });
   const { password } = req.body;
-  if (!password || password.length < 8) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Password must be at least 8 characters' });
+  if (!password || !validatePassword(password)) return res.status(400).json({ error: 'INVALID_INPUT', message: 'Invalid password: must be 8-1024 characters, no newlines or colons' });
   try {
     await changePassword(username, password);
     auditLog('CHANGE_PASSWORD', username, req.ip, true);

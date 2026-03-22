@@ -33,6 +33,13 @@ export function validateTerminal(terminal) {
   return typeof terminal === 'string' && TERMINAL_RE.test(terminal);
 }
 
+export function validatePassword(password) {
+  if (typeof password !== 'string') return false;
+  if (password.length < 8 || password.length > 1024) return false;
+  if (/[\n\r:]/.test(password)) return false;
+  return true;
+}
+
 export function validateRequired(obj, fields) {
   const missing = fields.filter(f => obj[f] === undefined || obj[f] === null || obj[f] === '');
   return missing.length === 0 ? null : `Missing required fields: ${missing.join(', ')}`;

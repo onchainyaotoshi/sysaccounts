@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { validateUsername, validateGroupname, validateShell, validateTerminal } from '../validator.js';
+import { validateUsername, validateGroupname, validateShell, validateTerminal, validatePassword } from '../validator.js';
 
 describe('validateUsername', () => {
   it('accepts valid usernames', () => {
@@ -37,6 +37,34 @@ describe('validateShell', () => {
     expect(validateShell('bash')).toBe(false);
     expect(validateShell('/bin/bash; rm -rf')).toBe(false);
     expect(validateShell('')).toBe(false);
+  });
+});
+
+describe('validatePassword', () => {
+  it('accepts valid passwords', () => {
+    expect(validatePassword('securepass123')).toBe(true);
+    expect(validatePassword('a'.repeat(1024))).toBe(true);
+    expect(validatePassword('p@$$w0rd!')).toBe(true);
+  });
+  it('rejects passwords with newlines', () => {
+    expect(validatePassword('pass\nword')).toBe(false);
+    expect(validatePassword('pass\rword')).toBe(false);
+    expect(validatePassword('user:pass\nanother:pass')).toBe(false);
+  });
+  it('rejects passwords with colons', () => {
+    expect(validatePassword('user:password')).toBe(false);
+  });
+  it('rejects passwords too short', () => {
+    expect(validatePassword('short')).toBe(false);
+    expect(validatePassword('1234567')).toBe(false);
+  });
+  it('rejects passwords too long', () => {
+    expect(validatePassword('a'.repeat(1025))).toBe(false);
+  });
+  it('rejects non-string values', () => {
+    expect(validatePassword(12345678)).toBe(false);
+    expect(validatePassword(null)).toBe(false);
+    expect(validatePassword(undefined)).toBe(false);
   });
 });
 
