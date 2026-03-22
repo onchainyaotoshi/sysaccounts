@@ -25,9 +25,8 @@ router.post('/', async (req, res) => {
     res.status(201).json({ message: `Sudo granted to ${username}` });
   } catch (err) {
     auditLog('GRANT_SUDO', username, req.ip, false, err.message, req.user?.email || req.user?.sub || 'anonymous');
-    const isSyntaxError = err.message.includes('syntax') || err.message.includes('Invalid sudo rule');
-    if (isSyntaxError) {
-      res.status(400).json({ error: 'SUDOERS_SYNTAX', message: err.message });
+    if (err.code === 'INVALID_SUDO_RULE' || err.code === 'SUDOERS_SYNTAX') {
+      res.status(400).json({ error: err.code, message: err.message });
     } else {
       console.error('Grant sudo failed:', err.message);
       res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });

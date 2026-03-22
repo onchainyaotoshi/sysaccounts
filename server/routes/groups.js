@@ -29,8 +29,12 @@ router.post('/', async (req, res) => {
     res.status(201).json({ message: `Group ${name} created` });
   } catch (err) {
     auditLog('CREATE_GROUP', name, req.ip, false, err.message, req.user?.email || req.user?.sub || 'anonymous');
-    console.error('Create group failed:', err.message);
-    res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
+    if (err.code === 'GROUP_EXISTS') {
+      res.status(409).json({ error: 'GROUP_EXISTS', message: err.message });
+    } else {
+      console.error('Create group failed:', err.message);
+      res.status(500).json({ error: 'COMMAND_FAILED', message: 'Command failed' });
+    }
   }
 });
 

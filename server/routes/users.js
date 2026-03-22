@@ -62,7 +62,7 @@ router.post('/', async (req, res) => {
     res.status(201).json({ message: `User ${username} created` });
   } catch (err) {
     auditLog('CREATE_USER', username, req.ip, false, err.message, req.user?.email || req.user?.sub || 'anonymous');
-    if (err.message.includes('already exists')) {
+    if (err.code === 'USER_EXISTS') {
       res.status(409).json({ error: 'USER_EXISTS', message: err.message });
     } else {
       console.error('Create user failed:', err.message);
