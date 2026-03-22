@@ -50,6 +50,12 @@ app.use('/api', apiLimiter);
 const passwordLimiter = rateLimit({ windowMs: 60000, max: 10 });
 app.use('/api/users/:username/password', passwordLimiter);
 
+const destructiveLimiter = rateLimit({ windowMs: 60000, max: 5, standardHeaders: true, legacyHeaders: false });
+app.delete('/api/users/:username', destructiveLimiter);
+app.delete('/api/groups/:groupname', destructiveLimiter);
+app.delete('/api/sudoers/:username', destructiveLimiter);
+app.delete('/api/sessions/:terminal(*)', destructiveLimiter);
+
 // 5. Auth middleware (protects all /api/* except /api/health which is above)
 if (process.env.ACCOUNTS_URL) {
   app.use('/api', createAuthMiddleware());
