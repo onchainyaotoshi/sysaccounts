@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { validateUsername, validateGroupname, validateShell, validateTerminal, validatePassword } from '../validator.js';
+import { validateUsername, validateGroupname, validateShell, validateTerminal, validatePassword, validateHome, validateInteger } from '../validator.js';
 
 describe('validateUsername', () => {
   it('accepts valid usernames', () => {
@@ -65,6 +65,39 @@ describe('validatePassword', () => {
     expect(validatePassword(12345678)).toBe(false);
     expect(validatePassword(null)).toBe(false);
     expect(validatePassword(undefined)).toBe(false);
+  });
+});
+
+describe('validateHome', () => {
+  it('accepts valid home paths', () => {
+    expect(validateHome('/home/jdoe')).toBe(true);
+    expect(validateHome('/var/lib/service')).toBe(true);
+  });
+  it('rejects path traversal', () => {
+    expect(validateHome('/home/../etc/shadow')).toBe(false);
+    expect(validateHome('/home/user/../../root')).toBe(false);
+  });
+  it('rejects non-string values', () => {
+    expect(validateHome(123)).toBe(false);
+    expect(validateHome(null)).toBe(false);
+  });
+});
+
+describe('validateInteger with range', () => {
+  it('accepts integers within range', () => {
+    expect(validateInteger(0, 0, 99999)).toBe(true);
+    expect(validateInteger(99999, 0, 99999)).toBe(true);
+    expect(validateInteger(500, 0, 99999)).toBe(true);
+    expect(validateInteger('42', 0, 99999)).toBe(true);
+  });
+  it('rejects integers outside range', () => {
+    expect(validateInteger(-1, 0, 99999)).toBe(false);
+    expect(validateInteger(100000, 0, 99999)).toBe(false);
+  });
+  it('still works without range (backward compat)', () => {
+    expect(validateInteger(42)).toBe(true);
+    expect(validateInteger(-5)).toBe(true);
+    expect(validateInteger('abc')).toBe(false);
   });
 });
 

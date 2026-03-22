@@ -16,15 +16,22 @@ export function validateShell(shell) {
 }
 
 export function validateHome(home) {
-  return typeof home === 'string' && home.length <= 255 && HOME_RE.test(home);
+  if (typeof home !== 'string') return false;
+  if (home.length > 255) return false;
+  if (home.includes('..')) return false;
+  return HOME_RE.test(home);
 }
 
 export function validateGecos(gecos) {
   return typeof gecos === 'string' && GECOS_RE.test(gecos);
 }
 
-export function validateInteger(value) {
-  return Number.isInteger(Number(value));
+export function validateInteger(value, min, max) {
+  const num = Number(value);
+  if (!Number.isInteger(num)) return false;
+  if (min !== undefined && num < min) return false;
+  if (max !== undefined && num > max) return false;
+  return true;
 }
 
 const TERMINAL_RE = /^(pts\/\d+|tty\d+)$/;
