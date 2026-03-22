@@ -8,10 +8,10 @@ function handleUnauthorized() {
   if (isRedirecting) return;
   isRedirecting = true;
   // Don't call auth.logout() — token is already invalid server-side.
-  // Just clear local storage and redirect to show login page.
+  // Clear SDK storage (prefixed keys) and redirect to show login page.
   try {
-    const authKeys = ['access_token', 'refresh_token', 'token_type', 'expires_at', 'id_token', 'code_verifier', 'auth_state'];
-    authKeys.forEach(k => { localStorage.removeItem(k); sessionStorage.removeItem(k); });
+    const auth = getAuth();
+    auth.storage.clearAll();
   } catch {}
   window.location.href = '/';
 }
