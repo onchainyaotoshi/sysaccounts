@@ -1,6 +1,4 @@
 import chokidar from 'chokidar';
-import { listUsers } from './services/userService.js';
-import { listGroups } from './services/groupService.js';
 
 export function startWatcher(io) {
   const userFiles = ['/etc/passwd', '/etc/shadow'];
@@ -13,16 +11,16 @@ export function startWatcher(io) {
 
   userWatcher.on('change', () => {
     clearTimeout(debounceUser);
-    debounceUser = setTimeout(async () => {
-      try { const users = await listUsers(); io.emit('users:changed', { type: 'users', data: users }); }
+    debounceUser = setTimeout(() => {
+      try { io.emit('users:changed'); }
       catch (err) { console.error('Failed to broadcast user changes:', err.message); }
     }, 500);
   });
 
   groupWatcher.on('change', () => {
     clearTimeout(debounceGroup);
-    debounceGroup = setTimeout(async () => {
-      try { const groups = await listGroups(); io.emit('groups:changed', { type: 'groups', data: groups }); }
+    debounceGroup = setTimeout(() => {
+      try { io.emit('groups:changed'); }
       catch (err) { console.error('Failed to broadcast group changes:', err.message); }
     }, 500);
   });
