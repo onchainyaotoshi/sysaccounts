@@ -158,6 +158,39 @@ sequenceDiagram
 
 All user management actions (create, delete, lock, password change, groups, sudoers) follow this same pattern: **Browser → API → Validation → Service → nsenter → Host OS → Real-time update**.
 
+## Auth Flow
+
+OAuth 2.0 PKCE flow when authentication is configured (`ACCOUNTS_URL` set in `.env`).
+
+```mermaid
+sequenceDiagram
+    actor User as Browser
+    participant API as Express API
+    participant OAuth as Accounts Service
+
+    User->>API: GET /auth/config
+    API-->>User: clientId, accountsUrl, redirectUri
+
+    User->>OAuth: /authorize (code_challenge + state)
+    OAuth-->>User: Login page
+    User->>OAuth: Enter credentials
+    OAuth-->>User: Redirect with auth code
+
+    User->>API: POST /auth/proxy/token<br/>(code + code_verifier)
+    API->>OAuth: Forward token request
+    OAuth-->>API: access_token
+    API-->>User: access_token
+
+    Note over User: Stores token in localStorage
+
+    User->>API: API requests (Authorization: Bearer token)
+    API->>OAuth: Validate token (cached 5 min)
+    OAuth-->>API: User info
+    API-->>User: Response
+```
+
+If `ACCOUNTS_URL` is not set, auth is skipped entirely — the app runs without login (dev mode).
+
 ## Updating
 
 ```bash
