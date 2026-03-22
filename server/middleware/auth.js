@@ -1,6 +1,5 @@
 import { createHash } from 'crypto';
 
-const ACCOUNTS_URL = process.env.ACCOUNTS_URL;
 const CACHE_TTL = 5 * 60 * 1000;
 const CLEANUP_INTERVAL = 10 * 60 * 1000;
 
@@ -37,7 +36,7 @@ export function createAuthMiddleware() {
     }
 
     try {
-      const response = await fetch(`${ACCOUNTS_URL}/me`, {
+      const response = await fetch(`${process.env.ACCOUNTS_URL}/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
