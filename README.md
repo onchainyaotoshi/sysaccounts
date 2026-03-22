@@ -122,6 +122,42 @@ server {
 
 Replace `<PORT>` with your configured port. The `Upgrade`/`Connection` headers are needed for WebSocket (real-time updates).
 
+## How It Works
+
+Example: creating a user from the browser.
+
+```mermaid
+sequenceDiagram
+    actor User as Browser
+    participant API as Express API
+    participant Auth as Auth Middleware
+    participant OAuth as Accounts Service
+    participant Svc as UserService
+    participant Exec as Executor
+    participant OS as Host OS
+    participant Watch as Chokidar Watcher
+
+    User->>API: POST /api/users (+ Bearer token)
+    API->>Auth: Validate token
+    Auth->>OAuth: GET /me
+    OAuth-->>Auth: User info
+    Auth-->>API: Authorized
+    API->>API: Validate input (username, shell, etc.)
+    API->>Svc: createUser()
+    Svc->>Exec: execute('useradd', args)
+    Exec->>OS: nsenter → useradd
+    OS-->>Exec: exit code 0
+    Exec-->>Svc: Success
+    Svc-->>API: User created
+    API-->>User: 201 Created
+
+    Note over OS,Watch: /etc/passwd changed
+    Watch->>User: Socket.IO → users:changed
+    User->>User: UI auto-refreshes
+```
+
+All user management actions (create, delete, lock, password change, groups, sudoers) follow this same pattern: **Browser → API → Validation → Service → nsenter → Host OS → Real-time update**.
+
 ## Updating
 
 ```bash
