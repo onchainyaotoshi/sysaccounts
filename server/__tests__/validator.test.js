@@ -1,5 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
-import { validateUsername, validateGroupname, validateShell, validateTerminal, validatePassword, validateHome, validateInteger } from '../validator.js';
+import { validateUsername, validateGroupname, validateShell, validateTerminal, validatePassword, validateHome, validateInteger, validateGecos, validateRequired } from '../validator.js';
+import { CommandError } from '../errors.js';
 
 describe('validateUsername', () => {
   it('accepts valid usernames', () => {
@@ -115,5 +116,78 @@ describe('validateTerminal', () => {
     expect(validateTerminal('tty')).toBe(false);
     expect(validateTerminal(123)).toBe(false);
     expect(validateTerminal(null)).toBe(false);
+  });
+});
+
+describe('validateUsername edge cases', () => {
+  it('rejects null and undefined', () => {
+    expect(validateUsername(null)).toBe(false);
+    expect(validateUsername(undefined)).toBe(false);
+  });
+  it('rejects objects and numbers', () => {
+    expect(validateUsername({})).toBe(false);
+    expect(validateUsername(42)).toBe(false);
+  });
+});
+
+describe('validateHome edge cases', () => {
+  it('rejects strings over 255 chars', () => {
+    expect(validateHome('/' + 'a'.repeat(256))).toBe(false);
+  });
+  it('rejects empty string', () => {
+    expect(validateHome('')).toBe(false);
+  });
+  it('rejects relative paths', () => {
+    expect(validateHome('home/user')).toBe(false);
+  });
+});
+
+describe('validateGecos', () => {
+  it('accepts valid GECOS', () => {
+    expect(validateGecos('John Doe')).toBe(true);
+    expect(validateGecos('User, Room 123, x1234')).toBe(true);
+  });
+  it('rejects GECOS with colon', () => {
+    expect(validateGecos('user:info')).toBe(false);
+  });
+  it('rejects GECOS with newline', () => {
+    expect(validateGecos('user\ninfo')).toBe(false);
+  });
+  it('rejects GECOS over 255 chars', () => {
+    expect(validateGecos('a'.repeat(256))).toBe(false);
+  });
+  it('rejects non-string', () => {
+    expect(validateGecos(123)).toBe(false);
+    expect(validateGecos(null)).toBe(false);
+  });
+});
+
+describe('validateRequired', () => {
+  it('returns null when all fields present', () => {
+    expect(validateRequired({ a: 'x', b: 'y' }, ['a', 'b'])).toBeNull();
+  });
+  it('returns missing fields message', () => {
+    expect(validateRequired({ a: 'x' }, ['a', 'b'])).toContain('b');
+  });
+  it('rejects empty string values', () => {
+    expect(validateRequired({ a: '' }, ['a'])).toContain('a');
+  });
+  it('rejects null values', () => {
+    expect(validateRequired({ a: null }, ['a'])).toContain('a');
+  });
+});
+
+describe('CommandError', () => {
+  it('creates error with default code', () => {
+    const err = new CommandError('something failed');
+    expect(err.message).toBe('something failed');
+    expect(err.code).toBe('COMMAND_FAILED');
+    expect(err.name).toBe('CommandError');
+    expect(err instanceof Error).toBe(true);
+  });
+  it('creates error with custom code', () => {
+    const err = new CommandError('user exists', 'USER_EXISTS');
+    expect(err.message).toBe('user exists');
+    expect(err.code).toBe('USER_EXISTS');
   });
 });
