@@ -41,9 +41,9 @@ export default function UserForm({ onClose, onCreated }) {
             <label>Groups</label>
             <MultiSelect options={groupOptions} selected={form.groups} onChange={(groups) => setForm({ ...form, groups })} placeholder="Select groups..." emptyText="No groups found" />
           </div>
-          <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input type="checkbox" checked={form.createHome} onChange={update('createHome')} />
-            <label style={{ margin: 0 }}>Create home directory</label>
+          <div className="form-group checkbox-group">
+            <input type="checkbox" id="createHome" checked={form.createHome} onChange={update('createHome')} />
+            <label htmlFor="createHome">Create home directory</label>
           </div>
           <div className="actions">
             <button type="button" onClick={onClose}>Cancel</button>
