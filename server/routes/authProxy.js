@@ -20,8 +20,7 @@ async function proxyRequest(accountsPath, req, res) {
     const response = await fetch(`${accountsUrl}${accountsPath}`, options);
     const body = await response.text();
 
-    const contentType = response.headers.get('content-type');
-    if (contentType) res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Type', 'application/json');
     res.status(response.status).send(body);
   } catch (err) {
     res.status(502).json({ error: 'AUTH_UNAVAILABLE', message: 'Authentication service unavailable' });
