@@ -12,6 +12,39 @@ Web-based Linux server user management tool. Manage users, groups, sudoers, and 
 - **Auth** — OAuth 2.0 PKCE via [accounts](https://github.com/onchainyaotoshi/accounts), including WebSocket connections
 - **Security** — Helmet headers, rate limiting, input validation on all endpoints
 
+## Architecture
+
+```mermaid
+graph TD
+    Browser["🌐 Browser"]
+    Nginx["Nginx Reverse Proxy<br/>(HTTPS)"]
+
+    subgraph Docker["Docker Container (privileged)"]
+        SPA["React SPA<br/>(static files)"]
+        API["Express API<br/>+ Socket.IO"]
+        Services["Services Layer"]
+        Watcher["Chokidar Watcher"]
+    end
+
+    nsenter["nsenter -t 1"]
+
+    subgraph Host["Host OS"]
+        Files["/etc/passwd<br/>/etc/shadow<br/>/etc/group<br/>/etc/sudoers<br/>/home"]
+    end
+
+    OAuth["OAuth Provider<br/>(accounts service)"]
+
+    Browser -->|"HTTPS"| Nginx
+    Nginx -->|"HTTP :9995"| API
+    API --> SPA
+    API -->|"validate token"| OAuth
+    API --> Services
+    Services -->|"execute commands"| nsenter
+    nsenter -->|"useradd, userdel,<br/>groupadd, etc."| Files
+    Files -->|"file changes"| Watcher
+    Watcher -->|"Socket.IO<br/>users:changed<br/>groups:changed"| Browser
+```
+
 ## Requirements
 
 - Linux server (manages real system users)
